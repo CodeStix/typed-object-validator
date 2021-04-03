@@ -15,6 +15,10 @@ class Schema<T> {
         this.isNullable = true;
         return this;
     }
+
+    or<D>(other: Schema<D>): Schema<SchemaType<Schema<T> | Schema<D>>> {
+        return new OrSchema([this, other]);
+    }
 }
 
 class StringSchema extends Schema<string> {
@@ -58,17 +62,16 @@ class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<SchemaT
     }
 }
 
-function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T) {
-    return new OrSchema(schemas) as Schema<SchemaType<T[number]>>;
+function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schema<SchemaType<T[number]>> {
+    return new OrSchema(schemas);
 }
 
 let a = string().min(100).max(21);
 let d = string().optional();
 
 let b = object({
-    nice: string().min(100),
+    nice: string().min(100).nullable(),
+    oof: object({ ok: string() }),
 });
 
-let c = or([a, d, b]);
-
-let e: SchemaType<typeof c>;
+let c = string().or(object({ yikes: string() }));
