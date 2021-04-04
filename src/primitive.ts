@@ -1,4 +1,4 @@
-import { SizeSchema, Schema, ErrorMap, ErrorType } from ".";
+import { SizeSchema, Schema, ErrorMap, ErrorType } from "./schemas";
 
 export class StringSchema extends SizeSchema<string> {
     protected regexMatch?: string;
@@ -96,7 +96,8 @@ export function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schem
     return new OrSchema(schemas);
 }
 
-type TupleSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? [D, ...TupleSchemasToType<E>] : [];
+export type TupleSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? [D, ...TupleSchemasToType<E>] : [];
+
 export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<TupleSchemasToType<T>> {
     constructor(private schemas: T) {
         super();
