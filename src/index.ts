@@ -28,14 +28,20 @@ export abstract class Schema<T> {
         return new OrSchema([this, other]) as Schema<OrSchemasToType<[Schema<T>, Schema<D>]>>;
     }
 
-    public validate(value: T): ErrorType<T> | undefined {
+    /**
+     * Returns null when value is valid but not falsey, undefined when valid, string when error.
+     */
+    protected validateNullable(value: T): ErrorType<T> | null | undefined {
         if (value === undefined) {
             return this.isOptional ? undefined : this.isOptionalMessage;
         }
         if (value === null) {
             return this.isNullable ? undefined : this.isNullableMessage;
         }
+        return null;
     }
+
+    public abstract validate(value: T): ErrorType<T> | undefined;
 
     // public abstract clean(value: T): T;
 }
@@ -57,8 +63,11 @@ export abstract class SizeSchema<T extends number | { length: number }> extends 
         this.maxMessage = message;
         return this;
     }
+
+    protected validateSize(value: number): ErrorType<T> | undefined {
+        if (this.minValue !== undefined && value < this.minValue) return this.minMessage ?? "must be longer";
+        if (this.maxValue !== undefined && value > this.maxValue) return this.maxMessage ?? "must be shorter";
+    }
 }
 
 export type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : never;
-
-// let g = tuple([string(), string()])

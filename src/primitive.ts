@@ -10,10 +10,14 @@ export class StringSchema extends SizeSchema<string> {
     }
 
     public validate(value: string) {
-        let e = super.validate(value);
-        if (e !== undefined) return e;
-        if (this.minValue !== undefined && value.length < this.minValue) return this.minMessage ?? "must be longer";
-        if (this.maxValue !== undefined && value.length > this.maxValue) return this.maxMessage ?? "must be shorter";
+        let n = super.validateNullable(value);
+        if (n !== null) return n;
+
+        if (typeof value !== "string") return "must be string";
+
+        let s = super.validateSize(value.length);
+        if (s !== undefined) return s;
+
         if (this.regexMatch !== undefined && !value.match(this.regexMatch)) return this.regexMessage ?? "does not match regex";
     }
 }
@@ -24,10 +28,12 @@ export function string(): StringSchema {
 
 export class NumberSchema extends SizeSchema<number> {
     public validate(value: number) {
-        let e = super.validate(value);
-        if (e !== undefined) return e;
-        if (this.minValue !== undefined && value < this.minValue) return this.minMessage ?? "must be bigger";
-        if (this.maxValue !== undefined && value > this.maxValue) return this.maxMessage ?? "must be smaller";
+        let n = super.validateNullable(value);
+        if (n !== null) return n;
+
+        if (typeof value !== "number") return "must be number";
+
+        return super.validateSize(value);
     }
 }
 
@@ -45,16 +51,17 @@ export class ObjectSchema<T extends {}> extends Schema<T> {
 
     public validate(value: T) {
         let keys = Object.keys(this.fields) as (keyof T)[];
+        let err: ErrorMap<T> = {};
         for (let i = 0; i < keys.length; i++) {
-            let k = keys[i];
-            let v = value[k];
-            let res = this.fields[k].validate(v);
-            if (res !== undefined) {
-                let err: ErrorMap<T> = {};
-                err[k] = res;
+            let key = keys[i];
+            let field = value[key];
+            let result = this.fields[key].validate(field);
+            if (result !== undefined) {
+                err[key] = result;
                 return err as ErrorType<T>;
             }
         }
+        return Object.keys(err).length > 0 ? (err as ErrorType<T>) : undefined;
     }
 }
 
@@ -70,15 +77,18 @@ export class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<
     }
 
     public validate(value: OrSchemasToType<T>) {
-        let lastResult: ErrorType<OrSchemasToType<T>> | undefined;
+        let n = this.validateNullable(value);
+        if (n !== null) return n;
+
+        let result: ErrorType<OrSchemasToType<T>> | undefined;
         for (let i = 0; i < this.schemas.length; i++) {
             let schema = this.schemas[i];
-            lastResult = schema.validate(value) as OrSchemasToType<T>;
-            if (lastResult === undefined) {
+            result = schema.validate(value) as OrSchemasToType<T>;
+            if (result === undefined) {
                 return undefined;
             }
         }
-        return lastResult;
+        return result;
     }
 }
 
@@ -93,9 +103,11 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
     }
 
     public validate(value: TupleSchemasToType<T>): ErrorType<TupleSchemasToType<T>> | undefined {
-        let e = super.validate(value);
-        if (e !== undefined) return e;
+        let n = super.validateNullable(value);
+        if (n !== null) return n;
+
         if (!Array.isArray(value) || value.length > this.schemas.length) return "invalid tuple";
+
         let err: ErrorMap<TupleSchemasToType<T>> = {};
         for (let i = 0; i < this.schemas.length; i++) {
             let schema = this.schemas[i];
@@ -105,6 +117,7 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
                 return err as ErrorType<TupleSchemasToType<T>>;
             }
         }
+        return Object.keys(err).length > 0 ? (err as ErrorType<TupleSchemasToType<T>>) : undefined;
     }
 }
 
@@ -118,20 +131,24 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
     }
 
     public validate(value: T[]) {
-        let e = super.validate(value);
-        if (e !== undefined) return e;
+        let n = super.validateNullable(value);
+        if (n !== null) return n;
 
         if (!Array.isArray(value)) return "must be array";
 
+        let s = super.validateSize(value.length);
+        if (s !== undefined) return s;
+
         let err: ErrorMap<T[]> = {} as any;
         for (let i = 0; i < value.length; i++) {
-            let d = value[i];
-            let res = this.schema.validate(d);
-            if (res !== undefined) {
-                err[i] = res;
+            let item = value[i];
+            let result = this.schema.validate(item);
+            if (result !== undefined) {
+                err[i] = result;
                 return err;
             }
         }
+        return Object.keys(err).length > 0 ? err : undefined;
     }
 }
 
@@ -142,11 +159,12 @@ export function array<T>(schema: Schema<T>) {
 let a = string().min(100).max(21);
 let d = string().optional();
 
-let dd = object([string(), string().optional()]);
+let dd = tuple([string(), string().optional()]);
 
 let b = object({
     nice: string().min(100).nullable(),
     oof: object({ ok: string() }),
+    nice2: string(),
 });
 
 let c = string().or(object({ yikes: string() }));
