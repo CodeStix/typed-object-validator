@@ -8,21 +8,25 @@ export type ErrorMap<T> = {
 
 export abstract class Schema<T> {
     protected isNullable = false;
-    protected isNullableMessage?: string;
+    protected isNullableMessage = "Null is not acceptable";
     protected isOptional = false;
-    protected isOptionalMessage?: string;
+    protected isOptionalMessage = "Value must exist";
 
     optional(message?: string): Schema<T | undefined> {
         this.isOptional = true;
-        this.isOptionalMessage = message;
+        if (message) this.isOptionalMessage = message;
         return this;
     }
 
     nullable(message?: string): Schema<T | null> {
         this.isNullable = true;
-        this.isNullableMessage = message;
+        if (message) this.isNullableMessage = message;
         return this;
     }
+
+    // or<D>(other: Schema<D>): OrSchema<[Schema<T>, Schema<D>]> {
+    // return new OrSchema([this, other]);
+    // }
 
     or<D>(other: Schema<D>): Schema<OrSchemasToType<[Schema<T>, Schema<D>]>> {
         return new OrSchema([this, other]) as Schema<OrSchemasToType<[Schema<T>, Schema<D>]>>;
@@ -31,13 +35,9 @@ export abstract class Schema<T> {
     /**
      * Returns null when value is valid but not falsey, undefined when valid, string when error.
      */
-    protected validateNullable(value: T): ErrorType<T> | null | undefined {
-        if (value === undefined) {
-            return this.isOptional ? undefined : this.isOptionalMessage;
-        }
-        if (value === null) {
-            return this.isNullable ? undefined : this.isNullableMessage;
-        }
+    protected validateNullable(value: T): string | null | undefined {
+        if (value === undefined) return this.isOptional ? undefined : this.isOptionalMessage;
+        if (value === null) return this.isNullable ? undefined : this.isNullableMessage;
         return null;
     }
 
@@ -48,25 +48,25 @@ export abstract class Schema<T> {
 
 export abstract class SizeSchema<T extends number | { length: number }> extends Schema<T> {
     protected minValue?: number;
-    protected minMessage?: string;
+    protected minMessage = "Must be longer";
     protected maxValue?: number;
-    protected maxMessage?: string;
+    protected maxMessage = "Must be shorter";
 
     public min(min: number, message?: string): SizeSchema<T> {
         this.minValue = min;
-        this.minMessage = message;
+        if (message) this.minMessage = message;
         return this;
     }
 
     public max(max: number, message?: string): SizeSchema<T> {
         this.maxValue = max;
-        this.maxMessage = message;
+        if (message) this.maxMessage = message;
         return this;
     }
 
     protected validateSize(value: number): ErrorType<T> | undefined {
-        if (this.minValue !== undefined && value < this.minValue) return this.minMessage ?? "must be longer";
-        if (this.maxValue !== undefined && value > this.maxValue) return this.maxMessage ?? "must be shorter";
+        if (this.minValue !== undefined && value < this.minValue) return this.minMessage;
+        if (this.maxValue !== undefined && value > this.maxValue) return this.maxMessage;
     }
 }
 

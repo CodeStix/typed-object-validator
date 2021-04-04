@@ -8,7 +8,7 @@ function testUser() {
         lastName: NameSchema,
     });
 
-    let a = UserSchema.validate({ lastName: "nicef", firstName: "oofdf" });
+    let a = UserSchema.validate({ lastName: "nice", firstName: "oofdf" });
 
     console.log(a);
 }

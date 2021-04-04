@@ -2,11 +2,12 @@ import { SizeSchema, Schema, ErrorMap, ErrorType } from "./schemas";
 
 export class StringSchema extends SizeSchema<string> {
     protected regexMatch?: string;
-    protected regexMessage?: string;
+    protected regexMessage = "Does not match regex";
 
     public regex(regex: string, message?: string) {
         this.regexMatch = regex;
-        this.regexMessage = message;
+        if (message) this.regexMessage = message;
+        return this;
     }
 
     public validate(value: string) {
@@ -18,7 +19,7 @@ export class StringSchema extends SizeSchema<string> {
         let s = super.validateSize(value.length);
         if (s !== undefined) return s;
 
-        if (this.regexMatch !== undefined && !value.match(this.regexMatch)) return this.regexMessage ?? "does not match regex";
+        if (this.regexMatch && !value.match(this.regexMatch)) return this.regexMessage;
     }
 }
 
@@ -27,11 +28,21 @@ export function string(): StringSchema {
 }
 
 export class NumberSchema extends SizeSchema<number> {
+    protected intMessage = "Must be integer";
+    protected allowFloat = false;
+
+    public float(allow: boolean = true, message?: string) {
+        this.allowFloat = allow;
+        if (message) this.intMessage = message;
+        return this;
+    }
+
     public validate(value: number) {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
         if (typeof value !== "number") return "must be number";
+        if (!this.allowFloat && !Number.isInteger(value)) return this.intMessage;
 
         return super.validateSize(value);
     }
