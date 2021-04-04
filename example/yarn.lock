@@ -1166,7 +1166,7 @@ type-is@~1.6.17, type-is@~1.6.18:
     media-typer "0.3.0"
     mime-types "~2.1.24"
 
-"typed-validator@link:..":
+"typed-object-validator@link:..":
   version "0.0.0"
   uid ""
 

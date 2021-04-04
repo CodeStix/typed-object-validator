@@ -1,6 +1,6 @@
 import express from "express";
-import * as tv from "typed-validator";
-import { SchemaType } from "typed-validator";
+import * as tv from "typed-object-validator";
+import { SchemaType } from "typed-object-validator";
 
 const ConditionSchema = tv.object({
     type: tv.or([tv.value("min"), tv.value("max"), tv.value("contains")]),
@@ -21,16 +21,24 @@ const QuestionnaireSchema = tv.object({
 });
 
 const RegisterSchema = tv.object({
-    firstName: tv.string().doTrim().min(2, "First name must be longer").max(20).or(tv.value("#yikes")),
+    firstName: tv.string().doTrim().min(2, "First name must be longer").max(20),
     lastName: tv.string().doTrim().min(2, "Last name must be longer").max(20),
     gender: tv.value("male").or(tv.value("female")),
     email: tv.email("Invalid email"),
     birthDate: tv.date(),
 });
 
+const RegisterRequestSchema = tv.object({
+    name: tv.string().optional(),
+    email: tv.email(),
+    gender: tv.value("male").or(tv.value("female")),
+});
+
+type RegisterRequest = SchemaType<typeof RegisterRequestSchema>;
+
 // test tv.float
 
-type RegisterRequest = SchemaType<typeof RegisterSchema>;
+let a: RegisterRequest;
 
 const app = express();
 
