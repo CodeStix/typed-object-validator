@@ -137,6 +137,27 @@ export function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schem
     return new OrSchema(schemas);
 }
 
+export type AndSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? D & AndSchemasToType<E> : never;
+
+export class AndSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<AndSchemasToType<T>> {
+    constructor(protected schemas: T) {
+        super();
+    }
+
+    public validate(value: AndSchemasToType<T>, context?: ValidationContext) {
+        let n = this.validateNullable(value);
+        if (n !== null) return n;
+
+        for (let i = 0; i < this.schemas.length; i++) {
+            let schema = this.schemas[i];
+            let result = schema.validate(value, context);
+            if (result !== undefined) {
+                return result as ErrorType<AndSchemasToType<T>>;
+            }
+        }
+    }
+}
+
 export type TupleSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? [D, ...TupleSchemasToType<E>] : [];
 
 export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<TupleSchemasToType<T>> {

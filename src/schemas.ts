@@ -1,4 +1,4 @@
-import { OrSchema, OrSchemasToType } from "./primitive";
+import { OrSchema, AndSchema } from "./primitive";
 
 export type ErrorType<T, Error extends string = string> = Error | (NonNullable<T> extends {} ? ErrorMap<NonNullable<T>, Error> : never);
 
@@ -28,6 +28,10 @@ export abstract class Schema<T> {
 
     or<D>(other: Schema<D>): Schema<T | D> {
         return new OrSchema([this, other]) as Schema<T | D>;
+    }
+
+    and<D>(other: Schema<D>): Schema<T & D> {
+        return new AndSchema([this, other]) as Schema<T & D>;
     }
 
     /**
