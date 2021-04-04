@@ -41,7 +41,7 @@ export class NumberSchema extends SizeSchema<number> {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
-        if (typeof value !== "number") return "must be number";
+        if (typeof value !== "number" || isNaN(value)) return "must be number";
         if (!this.allowFloat && !Number.isInteger(value)) return this.intMessage;
 
         return super.validateSize(value);
@@ -50,6 +50,36 @@ export class NumberSchema extends SizeSchema<number> {
 
 export function number(): NumberSchema {
     return new NumberSchema();
+}
+
+export class BooleanSchema extends Schema<boolean> {
+    public validate(value: boolean) {
+        let n = super.validateNullable(value);
+        if (n !== null) return n;
+
+        if (typeof value !== "boolean") return "must be boolean";
+    }
+}
+
+export function boolean(): BooleanSchema {
+    return new BooleanSchema();
+}
+
+export class ValueSchema<T> extends Schema<T> {
+    constructor(private value: T) {
+        super();
+    }
+
+    public validate(value: T) {
+        let n = this.validateNullable(value);
+        if (n !== null) return n;
+
+        if (this.value !== value) return "does not match value";
+    }
+}
+
+export function value<T extends number | string | boolean>(value: T) {
+    return new ValueSchema(value);
 }
 
 type ObjectKeySchemas<T> = {
@@ -167,21 +197,3 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
 export function array<T>(schema: Schema<T>) {
     return new ArraySchema(schema);
 }
-
-let a = string().min(100).max(21);
-let d = string().optional();
-
-let dd = tuple([string(), string().optional()]);
-
-let b = object({
-    nice: string().min(100).nullable(),
-    oof: object({ ok: string() }),
-    nice2: string(),
-});
-
-let c = string().or(object({ yikes: string() }));
-
-let f = array(string()).or(array(string()));
-let g = array(string()).min(100).or(string());
-
-let o = or([string(), object({ epic: string() })]);
