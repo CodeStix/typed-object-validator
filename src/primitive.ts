@@ -103,12 +103,17 @@ export class ObjectSchema<T extends {}> extends Schema<T> {
     }
 
     public validate(value: T, context: ValidationContext = { abortEarly: true }) {
+        let n = this.validateNullable(value);
+        if (n !== null) return n;
+
+        if (typeof value !== "object") return "Invalid object";
+
         let keys = Object.keys(this.fields) as (keyof T)[];
         let err: ErrorMap<T> = {};
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             let field = value[key];
-            let result = this.fields[key].validate(field);
+            let result = this.fields[key].validate(field, context);
             if (result !== undefined) {
                 err[key] = result;
                 if (context.abortEarly) return err as ErrorType<T>;
@@ -139,14 +144,14 @@ export class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<
         super();
     }
 
-    public validate(value: OrSchemasToType<T>) {
+    public validate(value: OrSchemasToType<T>, context?: ValidationContext) {
         let n = this.validateNullable(value);
         if (n !== null) return n;
 
         let result: ErrorType<OrSchemasToType<T>> | undefined;
         for (let i = 0; i < this.schemas.length; i++) {
             let schema = this.schemas[i];
-            result = schema.validate(value) as OrSchemasToType<T>;
+            result = schema.validate(value, context) as OrSchemasToType<T>;
             if (result === undefined) {
                 return undefined;
             }
@@ -215,7 +220,7 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
         let err: ErrorMap<TupleSchemasToType<T>> = {};
         for (let i = 0; i < this.schemas.length; i++) {
             let schema = this.schemas[i];
-            let result = schema.validate(value[i]);
+            let result = schema.validate(value[i], context);
             if (result !== undefined) {
                 err[i] = result as any;
                 if (context.abortEarly) return err as ErrorType<TupleSchemasToType<T>>;
@@ -255,7 +260,7 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
         let err: ErrorMap<T[]> = {} as any;
         for (let i = 0; i < value.length; i++) {
             let item = value[i];
-            let result = this.schema.validate(item);
+            let result = this.schema.validate(item, context);
             if (result !== undefined) {
                 err[i] = result;
                 if (context.abortEarly) return err;
