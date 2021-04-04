@@ -1,11 +1,11 @@
-import { SizeSchema, Schema, ErrorMap, ErrorType, ValidationContext } from "./schemas";
+import { SizeSchema, Schema, ErrorMap, ErrorType, ValidationContext, Validator } from "./schemas";
 
 export class StringSchema extends SizeSchema<string> {
-    protected regexMatch?: string;
+    protected regexMatch?: RegExp;
     protected regexMessage = "Does not match regex";
 
-    public regex(regex: string, message?: string) {
-        this.regexMatch = regex;
+    public regex(regex: string | RegExp, message?: string) {
+        this.regexMatch = typeof regex === "string" ? new RegExp(regex) : regex;
         if (message) this.regexMessage = message;
         return this;
     }
@@ -19,7 +19,7 @@ export class StringSchema extends SizeSchema<string> {
         let s = super.validateSize(value.length);
         if (s !== undefined) return s;
 
-        if (this.regexMatch && !value.match(this.regexMatch)) return this.regexMessage;
+        if (this.regexMatch && !this.regexMatch.exec(value)) return this.regexMessage;
     }
 }
 
@@ -196,4 +196,18 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
 
 export function array<T>(schema: Schema<T>) {
     return new ArraySchema(schema);
+}
+
+export class CustomSchema<T> extends Schema<T> {
+    constructor(protected validator: Validator<T>) {
+        super();
+    }
+
+    public validate(value: T, context: ValidationContext = { abortEarly: true }): ErrorType<T, string> | undefined {
+        return this.validator(value, context);
+    }
+}
+
+export function custom<T>(validator: Validator<T>) {
+    return new CustomSchema(validator);
 }

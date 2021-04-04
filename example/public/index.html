@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Testing application</title>
+        <style>
+            label {
+                display: block;
+            }
+            .container {
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <form method="POST" action="/register">
+                <h2>Register user</h2>
+                <label>First name</label>
+                <input type="text" name="firstName" />
+                <label>Last name</label>
+                <input type="text" name="lastName" />
+                <label>Email</label>
+                <input type="text" name="email" />
+                <button type="submit">Register</button>
+            </form>
+        </div>
+    </body>
+</html>

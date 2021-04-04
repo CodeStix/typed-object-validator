@@ -6,6 +6,8 @@ export type ErrorMap<T, Error extends string = string> = {
     [Key in keyof T]?: ErrorType<T[Key], Error>;
 };
 
+export type Validator<T, Error extends string = string> = (value: T, context: ValidationContext) => ErrorType<T, Error> | undefined;
+
 export abstract class Schema<T> {
     protected isNullable = false;
     protected isNullableMessage = "Null is not acceptable";
@@ -24,8 +26,8 @@ export abstract class Schema<T> {
         return this;
     }
 
-    or<D>(other: Schema<D>): Schema<OrSchemasToType<[Schema<T>, Schema<D>]>> {
-        return new OrSchema([this, other]) as Schema<OrSchemasToType<[Schema<T>, Schema<D>]>>;
+    or<D>(other: Schema<D>): Schema<T | D> {
+        return new OrSchema([this, other]) as Schema<T | D>;
     }
 
     /**
