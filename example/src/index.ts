@@ -5,8 +5,11 @@ import { SchemaType } from "typed-validator";
 const RegisterSchema = tv.object({
     firstName: tv.string().min(2, "First name must be longer").max(20).or(tv.value("#yikes")),
     lastName: tv.string().min(2, "Last name must be longer").max(20),
-    gender: tv.value("male").and(tv.string()),
-    email: tv.string().regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Invalid email"),
+    gender: tv.value("male").or(tv.value("female")),
+    email: tv
+        .string()
+        .regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Invalid email")
+        .and(tv.custom<string>((val) => `not ok: ${val}`)),
 });
 
 type RegisterRequest = SchemaType<typeof RegisterSchema>;
@@ -32,6 +35,7 @@ app.post("/register", (req, res, next) => {
     } else {
         res.json({
             status: "ok",
+            data,
         });
     }
 });

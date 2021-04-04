@@ -14,7 +14,7 @@ export class StringSchema extends SizeSchema<string> {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
-        if (typeof value !== "string") return "must be string";
+        if (typeof value !== "string") return "Must be string";
 
         let s = super.validateSize(value.length);
         if (s !== undefined) return s;
@@ -41,7 +41,7 @@ export class NumberSchema extends SizeSchema<number> {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
-        if (typeof value !== "number" || isNaN(value)) return "must be number";
+        if (typeof value !== "number" || isNaN(value)) return "Must be number";
         if (!this.allowFloat && !Number.isInteger(value)) return this.intMessage;
 
         return super.validateSize(value);
@@ -57,7 +57,7 @@ export class BooleanSchema extends Schema<boolean> {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
-        if (typeof value !== "boolean") return "must be boolean";
+        if (typeof value !== "boolean") return "Must be boolean";
     }
 }
 
@@ -74,11 +74,11 @@ export class ValueSchema<T> extends Schema<T> {
         let n = this.validateNullable(value);
         if (n !== null) return n;
 
-        if (this.value !== value) return "does not match value";
+        if (this.value !== value) return "Invalid value";
     }
 }
 
-export function value<T extends number | string | boolean>(value: T) {
+export function value<T extends string | number | boolean | null | undefined>(value: T): Schema<T> {
     return new ValueSchema(value);
 }
 
@@ -169,7 +169,7 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
-        if (!Array.isArray(value) || value.length > this.schemas.length) return "invalid tuple";
+        if (!Array.isArray(value) || value.length > this.schemas.length) return "Invalid tuple";
 
         let err: ErrorMap<TupleSchemasToType<T>> = {};
         for (let i = 0; i < this.schemas.length; i++) {
@@ -197,7 +197,7 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
-        if (!Array.isArray(value)) return "must be array";
+        if (!Array.isArray(value)) return "Must be array";
 
         let s = super.validateSize(value.length);
         if (s !== undefined) return s;
