@@ -8,22 +8,25 @@ export type ErrorMap<T, Error extends string = string> = {
 
 export type Validator<T, Error extends string = string> = (value: T, context: ValidationContext) => ErrorType<T, Error> | undefined;
 
+export type Transformer<T> = (value: T) => T;
+
 export abstract class Schema<T> {
     protected isNullable = false;
     protected isNullableMessage = "Null is not acceptable";
     protected isOptional = false;
     protected isOptionalMessage = "Value must exist";
+    protected customTransformer?: Transformer<T>;
 
-    optional(message?: string): Schema<T | undefined> {
+    optional(message?: string) {
         this.isOptional = true;
         if (message) this.isOptionalMessage = message;
-        return this;
+        return this as Schema<T | undefined>;
     }
 
-    nullable(message?: string): Schema<T | null> {
+    nullable(message?: string) {
         this.isNullable = true;
         if (message) this.isNullableMessage = message;
-        return this;
+        return this as Schema<T | null>;
     }
 
     or<D>(other: Schema<D>): Schema<T | D> {
@@ -32,6 +35,11 @@ export abstract class Schema<T> {
 
     and<D>(other: Schema<D>): Schema<T & D> {
         return new AndSchema([this, other]) as Schema<T & D>;
+    }
+
+    doCustom(transformer: Transformer<T>) {
+        this.customTransformer = transformer;
+        return this;
     }
 
     /**
@@ -45,7 +53,10 @@ export abstract class Schema<T> {
 
     public abstract validate(value: T, context?: ValidationContext): ErrorType<T> | undefined;
 
-    // public abstract clean(value: T): T;
+    public transform(value: T) {
+        if (this.customTransformer) value = this.customTransformer(value);
+        return value;
+    }
 }
 
 export abstract class SizeSchema<T extends number | { length: number }> extends Schema<T> {

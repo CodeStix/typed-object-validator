@@ -3,10 +3,16 @@ import { SizeSchema, Schema, ErrorMap, ErrorType, ValidationContext, Validator }
 export class StringSchema extends SizeSchema<string> {
     protected regexMatch?: RegExp;
     protected regexMessage = "Does not match regex";
+    protected trim = false;
 
     public regex(regex: string | RegExp, message?: string) {
         this.regexMatch = typeof regex === "string" ? new RegExp(regex) : regex;
         if (message) this.regexMessage = message;
+        return this;
+    }
+
+    public doTrim(trim = true) {
+        this.trim = trim;
         return this;
     }
 
@@ -20,6 +26,11 @@ export class StringSchema extends SizeSchema<string> {
         if (s !== undefined) return s;
 
         if (this.regexMatch && !this.regexMatch.exec(value)) return this.regexMessage;
+    }
+
+    public transform(value: string) {
+        if (this.trim) value = value.trim();
+        return super.transform(value);
     }
 }
 
@@ -85,6 +96,7 @@ export function value<T extends string | number | boolean | null | undefined>(va
 type ObjectKeySchemas<T> = {
     [Key in keyof T]: Schema<T[Key]>;
 };
+
 export class ObjectSchema<T extends {}> extends Schema<T> {
     constructor(protected fields: ObjectKeySchemas<T>) {
         super();
@@ -103,6 +115,16 @@ export class ObjectSchema<T extends {}> extends Schema<T> {
             }
         }
         return Object.keys(err).length > 0 ? (err as ErrorType<T>) : undefined;
+    }
+
+    public transform(value: T) {
+        let keys = Object.keys(this.fields) as (keyof T)[];
+        let obj: T = {} as any;
+        for (let i = 0; i < keys.length; i++) {
+            let key = keys[i];
+            obj[key] = this.fields[key].transform(value[key]);
+        }
+        return super.transform(obj);
     }
 }
 
@@ -131,6 +153,18 @@ export class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<
         }
         return result;
     }
+
+    public transform(value: OrSchemasToType<T>) {
+        // Look for the matching value
+        for (let i = 0; i < this.schemas.length; i++) {
+            let schema = this.schemas[i];
+            if (schema.validate(value) === undefined) {
+                value = schema.transform(value);
+                break;
+            }
+        }
+        return super.transform(value);
+    }
 }
 
 export function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schema<OrSchemasToType<T>> {
@@ -155,6 +189,13 @@ export class AndSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema
                 return result as ErrorType<AndSchemasToType<T>>;
             }
         }
+    }
+
+    public transform(value: AndSchemasToType<T>) {
+        for (let i = 0; i < this.schemas.length; i++) {
+            value = this.schemas[i].transform(value);
+        }
+        return super.transform(value);
     }
 }
 
@@ -181,6 +222,15 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
             }
         }
         return Object.keys(err).length > 0 ? (err as ErrorType<TupleSchemasToType<T>>) : undefined;
+    }
+
+    public transform(value: TupleSchemasToType<T>) {
+        let arr = new Array(this.schemas.length) as TupleSchemasToType<T>;
+        for (let i = 0; i < this.schemas.length; i++) {
+            let schema = this.schemas[i];
+            arr[i] = schema.transform(value[i]);
+        }
+        return super.transform(arr);
     }
 }
 
@@ -212,6 +262,14 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
             }
         }
         return Object.keys(err).length > 0 ? err : undefined;
+    }
+
+    public transform(value: T[]) {
+        let arr = new Array(value.length) as T[];
+        for (let i = 0; i < value.length; i++) {
+            arr[i] = this.schema.transform(value[i]);
+        }
+        return super.transform(arr);
     }
 }
 
