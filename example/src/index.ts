@@ -24,7 +24,7 @@ const RegisterSchema = tv.object({
     firstName: tv.string().doTrim().min(2, "First name must be longer").max(20).or(tv.value("#yikes")),
     lastName: tv.string().doTrim().min(2, "Last name must be longer").max(20),
     gender: tv.value("male").or(tv.value("female")),
-    email: tv.string().regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Invalid email"),
+    email: tv.email(),
     birthDate: tv.date(),
 });
 

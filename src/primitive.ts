@@ -38,6 +38,10 @@ export function string(): StringSchema {
     return new StringSchema();
 }
 
+export function email(invalidMessage?: string) {
+    return new StringSchema().regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, invalidMessage);
+}
+
 export class NumberSchema extends SizeSchema<number> {
     protected intMessage = "Must be integer";
     protected allowFloat = false;
