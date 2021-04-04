@@ -26,8 +26,8 @@ export abstract class Schema<T> {
         return this;
     }
 
-    or<D>(other: Schema<D>): Schema<SchemaType<Schema<T> | Schema<D>>> {
-        return new OrSchema([this, other]);
+    or<D>(other: Schema<D>): Schema<OrSchemaToType<[Schema<T>, Schema<D>]>> {
+        return new OrSchema([this, other]) as Schema<OrSchemaToType<[Schema<T>, Schema<D>]>>;
     }
 
     public validate(value: T): ErrorType<T> | undefined {
@@ -75,12 +75,11 @@ class StringSchema extends LengthySchema<string> {
     }
 }
 
-type ObjectFieldSchemas<T> = {
+type ObjectKeySchemas<T> = {
     [Key in keyof T]: Schema<T[Key]>;
 };
-
 class ObjectSchema<T extends {}> extends Schema<T> {
-    constructor(private fields: ObjectFieldSchemas<T>) {
+    constructor(private fields: ObjectKeySchemas<T>) {
         super();
     }
 
@@ -99,7 +98,7 @@ class ObjectSchema<T extends {}> extends Schema<T> {
     }
 }
 
-function object<T>(fields: ObjectFieldSchemas<T>) {
+function object<T>(fields: ObjectKeySchemas<T>) {
     return new ObjectSchema(fields);
 }
 
@@ -125,7 +124,7 @@ function tuple<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schema<Tu
     return new TupleSchema(schemas);
 }
 
-// type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : never;
+export type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : never;
 
 class ArraySchema<T> extends LengthySchema<T[]> {
     constructor(private schema: Schema<T>) {
