@@ -290,3 +290,29 @@ export class CustomSchema<T> extends Schema<T> {
 export function custom<T>(validator: Validator<T>) {
     return new CustomSchema(validator);
 }
+
+export class DateSchema extends Schema<Date> {
+    protected invalidMessage = "Invalid date";
+
+    constructor(invalidMessage?: string) {
+        super();
+        if (invalidMessage) this.invalidMessage = invalidMessage;
+    }
+
+    public validate(value: Date, context?: ValidationContext): string | undefined {
+        if (typeof value === "string" || typeof value === "number" || value instanceof Date) {
+            let d = new Date(value);
+            if (!isNaN(d.getTime())) return undefined;
+        }
+        return this.invalidMessage;
+    }
+
+    public transform(value: Date) {
+        // Value can be string, number or Date, which the Date constructor all accepts
+        return new Date(value);
+    }
+}
+
+export function date(invalidMessage?: string) {
+    return new DateSchema(invalidMessage);
+}

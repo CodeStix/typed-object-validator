@@ -7,6 +7,7 @@ const RegisterSchema = tv.object({
     lastName: tv.string().doTrim().min(2, "Last name must be longer").max(20),
     gender: tv.value("male").or(tv.value("female")),
     email: tv.string().regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Invalid email"),
+    birthDate: tv.date(),
 });
 
 type RegisterRequest = SchemaType<typeof RegisterSchema>;
@@ -30,6 +31,7 @@ app.post("/register", (req, res, next) => {
             error: err,
         });
     } else {
+        console.log(data, RegisterSchema.transform(data));
         res.json({
             status: "ok",
             data: RegisterSchema.transform(data),
