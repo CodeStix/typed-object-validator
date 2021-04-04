@@ -1,9 +1,9 @@
 import { OrSchema, OrSchemasToType } from "./primitive";
 
-export type ErrorType<T> = string | (NonNullable<T> extends {} ? ErrorMap<NonNullable<T>> : never);
+export type ErrorType<T, Error extends string = string> = Error | (NonNullable<T> extends {} ? ErrorMap<NonNullable<T>, Error> : never);
 
-export type ErrorMap<T> = {
-    [Key in keyof T]?: ErrorType<T[Key]>;
+export type ErrorMap<T, Error extends string = string> = {
+    [Key in keyof T]?: ErrorType<T[Key], Error>;
 };
 
 export abstract class Schema<T> {
