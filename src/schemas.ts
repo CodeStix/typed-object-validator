@@ -18,12 +18,14 @@ export abstract class Schema<T> {
     protected customTransformer?: Transformer<T>;
 
     optional(message?: string) {
+        if (this.isOptional) throw new Error("Duplicate optional() call");
         this.isOptional = true;
         if (message) this.isOptionalMessage = message;
         return this as Schema<T | undefined>;
     }
 
     nullable(message?: string) {
+        if (this.isNullable) throw new Error("Duplicate nullable() call");
         this.isNullable = true;
         if (message) this.isNullableMessage = message;
         return this as Schema<T | null>;
@@ -66,12 +68,14 @@ export abstract class SizeSchema<T extends number | { length: number }> extends 
     protected maxMessage = "Must be shorter";
 
     public min(min: number, message?: string): SizeSchema<T> {
+        if (this.minValue !== undefined) throw new Error("Duplicate min() call");
         this.minValue = min;
         if (message) this.minMessage = message;
         return this;
     }
 
     public max(max: number, message?: string): SizeSchema<T> {
+        if (this.maxValue !== undefined) throw new Error("Duplicate max() call");
         this.maxValue = max;
         if (message) this.maxMessage = message;
         return this;

@@ -24,9 +24,11 @@ const RegisterSchema = tv.object({
     firstName: tv.string().doTrim().min(2, "First name must be longer").max(20).or(tv.value("#yikes")),
     lastName: tv.string().doTrim().min(2, "Last name must be longer").max(20),
     gender: tv.value("male").or(tv.value("female")),
-    email: tv.email(),
+    email: tv.email("Invalid email"),
     birthDate: tv.date(),
 });
+
+// test tv.float
 
 type RegisterRequest = SchemaType<typeof RegisterSchema>;
 

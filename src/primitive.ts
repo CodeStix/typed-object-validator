@@ -6,6 +6,7 @@ export class StringSchema extends SizeSchema<string> {
     protected trim = false;
 
     public regex(regex: string | RegExp, message?: string) {
+        if (this.regexMatch) throw new Error("Duplicate regex() call");
         this.regexMatch = typeof regex === "string" ? new RegExp(regex) : regex;
         if (message) this.regexMessage = message;
         return this;
@@ -44,9 +45,10 @@ export function email(invalidMessage?: string) {
 
 export class NumberSchema extends SizeSchema<number> {
     protected intMessage = "Must be integer";
-    protected allowFloat = false;
+    protected allowFloat?: boolean;
 
     public float(allow: boolean = true, message?: string) {
+        if (this.allowFloat !== undefined) throw new Error("Duplicate float() call");
         this.allowFloat = allow;
         if (message) this.intMessage = message;
         return this;
@@ -57,7 +59,7 @@ export class NumberSchema extends SizeSchema<number> {
         if (n !== null) return n;
 
         if (typeof value !== "number" || isNaN(value)) return "Must be number";
-        if (!this.allowFloat && !Number.isInteger(value)) return this.intMessage;
+        if (!(this.allowFloat ?? false) && !Number.isInteger(value)) return this.intMessage;
 
         return super.validateSize(value);
     }
