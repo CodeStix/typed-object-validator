@@ -2,6 +2,10 @@ function string(): StringSchema {
     return new StringSchema();
 }
 
+function number(): NumberSchema {
+    return new NumberSchema();
+}
+
 export type ErrorType<T> = string | (NonNullable<T> extends {} ? ErrorMap<NonNullable<T>> : never);
 
 export type ErrorMap<T> = {
@@ -26,8 +30,8 @@ export abstract class Schema<T> {
         return this;
     }
 
-    or<D>(other: Schema<D>): Schema<OrSchemaToType<[Schema<T>, Schema<D>]>> {
-        return new OrSchema([this, other]) as Schema<OrSchemaToType<[Schema<T>, Schema<D>]>>;
+    or<D>(other: Schema<D>): Schema<OrSchemasToType<[Schema<T>, Schema<D>]>> {
+        return new OrSchema([this, other]) as Schema<OrSchemasToType<[Schema<T>, Schema<D>]>>;
     }
 
     public validate(value: T): ErrorType<T> | undefined {
@@ -42,36 +46,49 @@ export abstract class Schema<T> {
     // public abstract clean(value: T): T;
 }
 
-abstract class LengthySchema<T extends { length: number }> extends Schema<T> {
-    protected minLength?: number;
-    protected minLengthMessage?: string;
-    protected maxLength?: number;
-    protected maxLengthMessage?: string;
+abstract class SizeSchema<T extends number | { length: number }> extends Schema<T> {
+    protected minValue?: number;
+    protected minMessage?: string;
+    protected maxValue?: number;
+    protected maxMessage?: string;
 
     public min(min: number, message?: string) {
-        this.minLength = min;
-        this.minLengthMessage = message;
+        this.minValue = min;
+        this.minMessage = message;
         return this;
     }
 
     public max(max: number, message?: string) {
-        this.maxLength = max;
-        this.maxLengthMessage = message;
+        this.maxValue = max;
+        this.maxMessage = message;
         return this;
-    }
-
-    public validate(value: T) {
-        let e = super.validate(value);
-        if (e !== undefined) return e;
-        if (this.minLength !== undefined && value.length < this.minLength) return this.minLengthMessage ?? "must be longer";
-        if (this.maxLength !== undefined && value.length > this.maxLength) return this.maxLengthMessage ?? "must be shorter";
     }
 }
 
-class StringSchema extends LengthySchema<string> {
+class StringSchema extends SizeSchema<string> {
+    protected regexMatch?: string;
+    protected regexMessage?: string;
+
+    public regex(regex: string, message?: string) {
+        this.regexMatch = regex;
+        this.regexMessage = message;
+    }
+
     public validate(value: string) {
-        if (typeof value !== "string") return "must be string";
-        return super.validate(value);
+        let e = super.validate(value);
+        if (e !== undefined) return e;
+        if (this.minValue !== undefined && value.length < this.minValue) return this.minMessage ?? "must be longer";
+        if (this.maxValue !== undefined && value.length > this.maxValue) return this.maxMessage ?? "must be shorter";
+        if (this.regexMatch !== undefined && !value.match(this.regexMatch)) return this.regexMessage ?? "does not match regex";
+    }
+}
+
+class NumberSchema extends SizeSchema<number> {
+    public validate(value: number) {
+        let e = super.validate(value);
+        if (e !== undefined) return e;
+        if (this.minValue !== undefined && value < this.minValue) return this.minMessage ?? "must be bigger";
+        if (this.maxValue !== undefined && value > this.maxValue) return this.maxMessage ?? "must be smaller";
     }
 }
 
@@ -79,11 +96,11 @@ type ObjectKeySchemas<T> = {
     [Key in keyof T]: Schema<T[Key]>;
 };
 class ObjectSchema<T extends {}> extends Schema<T> {
-    constructor(private fields: ObjectKeySchemas<T>) {
+    constructor(protected fields: ObjectKeySchemas<T>) {
         super();
     }
 
-    public validate(value: T): ErrorType<T> | undefined {
+    public validate(value: T) {
         let keys = Object.keys(this.fields) as (keyof T)[];
         for (let i = 0; i < keys.length; i++) {
             let k = keys[i];
@@ -102,33 +119,77 @@ function object<T>(fields: ObjectKeySchemas<T>) {
     return new ObjectSchema(fields);
 }
 
-type OrSchemaToType<T> = T extends [Schema<infer D>, ...infer E] ? D | OrSchemaToType<E> : never;
-class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<OrSchemaToType<T>> {
-    constructor(private schemas: T) {
+type OrSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? D | OrSchemasToType<E> : never;
+class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<OrSchemasToType<T>> {
+    constructor(protected schemas: T) {
         super();
+    }
+
+    public validate(value: OrSchemasToType<T>) {
+        let lastResult: ErrorType<OrSchemasToType<T>> | undefined;
+        for (let i = 0; i < this.schemas.length; i++) {
+            let schema = this.schemas[i];
+            lastResult = schema.validate(value) as OrSchemasToType<T>;
+            if (lastResult === undefined) {
+                return undefined;
+            }
+        }
+        return lastResult;
     }
 }
 
-function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schema<OrSchemaToType<T>> {
+function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schema<OrSchemasToType<T>> {
     return new OrSchema(schemas);
 }
 
-type TupleSchemaToType<T> = T extends [Schema<infer D>, ...infer E] ? [D, ...TupleSchemaToType<E>] : [];
-class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<TupleSchemaToType<T>> {
+type TupleSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? [D, ...TupleSchemasToType<E>] : [];
+class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<TupleSchemasToType<T>> {
     constructor(private schemas: T) {
         super();
     }
+
+    public validate(value: TupleSchemasToType<T>): ErrorType<TupleSchemasToType<T>> | undefined {
+        let e = super.validate(value);
+        if (e !== undefined) return e;
+        if (!Array.isArray(value) || value.length > this.schemas.length) return "invalid tuple";
+        let err: ErrorMap<TupleSchemasToType<T>> = {};
+        for (let i = 0; i < this.schemas.length; i++) {
+            let schema = this.schemas[i];
+            let result = schema.validate(value[i]);
+            if (result !== undefined) {
+                err[i] = result as any;
+                return err as ErrorType<TupleSchemasToType<T>>;
+            }
+        }
+    }
 }
 
-function tuple<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schema<TupleSchemaToType<T>> {
+function tuple<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schema<TupleSchemasToType<T>> {
     return new TupleSchema(schemas);
 }
 
 export type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : never;
 
-class ArraySchema<T> extends LengthySchema<T[]> {
+class ArraySchema<T> extends SizeSchema<T[]> {
     constructor(private schema: Schema<T>) {
         super();
+    }
+
+    public validate(value: T[]) {
+        let e = super.validate(value);
+        if (e !== undefined) return e;
+
+        if (!Array.isArray(value)) return "must be array";
+
+        let err: ErrorMap<T[]> = {} as any;
+        for (let i = 0; i < value.length; i++) {
+            let d = value[i];
+            let res = this.schema.validate(d);
+            if (res !== undefined) {
+                err[i] = res;
+                return err;
+            }
+        }
     }
 }
 
