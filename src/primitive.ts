@@ -1,4 +1,4 @@
-import { SizeSchema, Schema, ErrorMap, ErrorType } from "./schemas";
+import { SizeSchema, Schema, ErrorMap, ErrorType, ValidationContext } from "./schemas";
 
 export class StringSchema extends SizeSchema<string> {
     protected regexMatch?: string;
@@ -66,7 +66,7 @@ export function boolean(): BooleanSchema {
 }
 
 export class ValueSchema<T> extends Schema<T> {
-    constructor(private value: T) {
+    constructor(protected value: T) {
         super();
     }
 
@@ -90,7 +90,7 @@ export class ObjectSchema<T extends {}> extends Schema<T> {
         super();
     }
 
-    public validate(value: T) {
+    public validate(value: T, context: ValidationContext = { abortEarly: true }) {
         let keys = Object.keys(this.fields) as (keyof T)[];
         let err: ErrorMap<T> = {};
         for (let i = 0; i < keys.length; i++) {
@@ -99,7 +99,7 @@ export class ObjectSchema<T extends {}> extends Schema<T> {
             let result = this.fields[key].validate(field);
             if (result !== undefined) {
                 err[key] = result;
-                return err as ErrorType<T>;
+                if (context.abortEarly) return err as ErrorType<T>;
             }
         }
         return Object.keys(err).length > 0 ? (err as ErrorType<T>) : undefined;
@@ -140,11 +140,11 @@ export function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schem
 export type TupleSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? [D, ...TupleSchemasToType<E>] : [];
 
 export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<TupleSchemasToType<T>> {
-    constructor(private schemas: T) {
+    constructor(protected schemas: T) {
         super();
     }
 
-    public validate(value: TupleSchemasToType<T>): ErrorType<TupleSchemasToType<T>> | undefined {
+    public validate(value: TupleSchemasToType<T>, context: ValidationContext = { abortEarly: true }) {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
@@ -156,7 +156,7 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
             let result = schema.validate(value[i]);
             if (result !== undefined) {
                 err[i] = result as any;
-                return err as ErrorType<TupleSchemasToType<T>>;
+                if (context.abortEarly) return err as ErrorType<TupleSchemasToType<T>>;
             }
         }
         return Object.keys(err).length > 0 ? (err as ErrorType<TupleSchemasToType<T>>) : undefined;
@@ -168,11 +168,11 @@ export function tuple<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Sc
 }
 
 export class ArraySchema<T> extends SizeSchema<T[]> {
-    constructor(private schema: Schema<T>) {
+    constructor(protected schema: Schema<T>) {
         super();
     }
 
-    public validate(value: T[]) {
+    public validate(value: T[], context: ValidationContext = { abortEarly: true }) {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
@@ -187,7 +187,7 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
             let result = this.schema.validate(item);
             if (result !== undefined) {
                 err[i] = result;
-                return err;
+                if (context.abortEarly) return err;
             }
         }
         return Object.keys(err).length > 0 ? err : undefined;

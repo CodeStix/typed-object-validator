@@ -24,10 +24,6 @@ export abstract class Schema<T> {
         return this;
     }
 
-    // or<D>(other: Schema<D>): OrSchema<[Schema<T>, Schema<D>]> {
-    // return new OrSchema([this, other]);
-    // }
-
     or<D>(other: Schema<D>): Schema<OrSchemasToType<[Schema<T>, Schema<D>]>> {
         return new OrSchema([this, other]) as Schema<OrSchemasToType<[Schema<T>, Schema<D>]>>;
     }
@@ -41,7 +37,7 @@ export abstract class Schema<T> {
         return null;
     }
 
-    public abstract validate(value: T): ErrorType<T> | undefined;
+    public abstract validate(value: T, context?: ValidationContext): ErrorType<T> | undefined;
 
     // public abstract clean(value: T): T;
 }
@@ -71,3 +67,7 @@ export abstract class SizeSchema<T extends number | { length: number }> extends 
 }
 
 export type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : never;
+
+export interface ValidationContext {
+    abortEarly: boolean;
+}
