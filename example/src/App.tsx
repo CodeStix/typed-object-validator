@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AnyListener, FormError, FormInput, FormTextArea, Listener, useForm } from "typed-react-form";
-import * as tv from "typed-object-validator";
+import tv from "typed-object-validator";
 
 class UserClass {
     firstName!: string;
