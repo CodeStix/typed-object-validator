@@ -16,37 +16,44 @@ export abstract class Schema<T> {
     protected isOptional = false;
     protected isOptionalMessage = "Value must exist";
     protected customTransformer?: Transformer<T>;
+    protected customValidator?: Validator<T>;
+    protected whenEmptyValue?: { set: T };
 
-    optional(message?: string) {
+    public optional(message?: string) {
         if (this.isOptional) throw new Error("Duplicate optional() call");
         this.isOptional = true;
         if (message) this.isOptionalMessage = message;
         return this as Schema<T | undefined>;
     }
 
-    nullable(message?: string) {
+    public nullable(message?: string) {
         if (this.isNullable) throw new Error("Duplicate nullable() call");
         this.isNullable = true;
         if (message) this.isNullableMessage = message;
         return this as Schema<T | null>;
     }
 
-    or<D>(other: Schema<D>): Schema<T | D> {
+    public or<D>(other: Schema<D>): Schema<T | D> {
         return new OrSchema([this, other]) as Schema<T | D>;
     }
 
-    and<D>(other: Schema<D>): Schema<T & D> {
+    public and<D>(other: Schema<D>): Schema<T & D> {
         return new AndSchema([this, other]) as Schema<T & D>;
     }
 
-    doCustom(transformer: Transformer<T>) {
+    public doSetWhenEmpty<D extends string>(valueToSet: D): Schema<T | D>;
+    public doSetWhenEmpty<D extends any>(valueToSet: D): Schema<T | D>;
+    public doSetWhenEmpty<D>(valueToSet: D): Schema<T | D> {
+        if (this.whenEmptyValue) throw new Error("Duplicate doSetWhenEmpty() call");
+        this.whenEmptyValue = { set: valueToSet as any };
+        return this as Schema<T | D>;
+    }
+
+    public doCustom(transformer: Transformer<T>) {
         this.customTransformer = transformer;
         return this;
     }
 
-    /**
-     * Returns null when value is valid but not falsey, undefined when valid, string when error.
-     */
     protected validateNullable(value: T): string | null | undefined {
         if (value === undefined) return this.isOptional ? undefined : this.isOptionalMessage;
         if (value === null) return this.isNullable ? undefined : this.isNullableMessage;
@@ -57,11 +64,12 @@ export abstract class Schema<T> {
 
     public transform(value: T, context: TransformationContext) {
         if (this.customTransformer) value = this.customTransformer(value);
+        if (this.whenEmptyValue) value = value ? value : this.whenEmptyValue.set;
         return value;
     }
 }
 
-export abstract class SizeSchema<T extends number | { length: number }> extends Schema<T> {
+export abstract class SizeSchema<T> extends Schema<T> {
     protected minValue?: number;
     protected minMessage = "Must be longer";
     protected maxValue?: number;

@@ -1,4 +1,4 @@
-import { SizeSchema, Schema, ErrorMap, ErrorType, ValidationContext, Validator, TransformationContext } from "./schemas";
+import { SizeSchema, Schema, ErrorMap, ErrorType, ValidationContext, Validator, TransformationContext, SchemaType } from "./schemas";
 
 type StringCasing = "lower" | "upper" | "capitalize" | "kebab-case" | "kebab-lower-case";
 
@@ -328,6 +328,7 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
         for (let i = 0; i < value.length; i++) {
             arr[i] = this.schema.transform(value[i], context);
         }
+
         return super.transform(arr, context);
     }
 }
