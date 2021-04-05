@@ -1,11 +1,12 @@
-import React from "react";
-import { AnyListener, FormError, FormInput, Listener, useForm } from "typed-react-form";
+import React, { useState } from "react";
+import { AnyListener, FormError, FormInput, FormTextArea, Listener, useForm } from "typed-react-form";
 import * as tv from "typed-object-validator";
 import { string } from "typed-object-validator";
 
 const UserSchema = tv.object({
     firstName: tv.string().doTransformCase("capitalize").min(1, "Enter a first name"),
     lastName: tv.string().doTransformCase("capitalize").min(1, "Enter a last name"),
+    title: tv.string().doTransformCase("kebab-lower-case"),
     birthDate: tv.date("Enter a birth date"),
     gender: tv.value("male").or(tv.value("female")),
 });
@@ -13,6 +14,7 @@ const UserSchema = tv.object({
 type User = tv.SchemaType<typeof UserSchema>;
 
 function App() {
+    const [submitted, setSubmitted] = useState<User>();
     const form = useForm<Partial<User>>(
         { firstName: "", lastName: "" },
         (values) => UserSchema.validate(values as any, { abortEarly: false }) ?? ({} as any)
@@ -24,7 +26,8 @@ function App() {
                 style={{ margin: "2em" }}
                 onReset={() => form.resetAll(false)}
                 onSubmit={form.handleSubmit(() => {
-                    console.log(form.values);
+                    console.log("submit", form.values);
+                    setSubmitted({ ...form.values } as User);
                 })}>
                 <p>First name</p>
                 <FormInput form={form} name="firstName" />
@@ -32,6 +35,9 @@ function App() {
                 <p>Last name</p>
                 <FormInput form={form} name="lastName" />
                 <FormError form={form} name="lastName" />
+                <p>Title</p>
+                <FormTextArea form={form} name="title" />
+                <FormError form={form} name="title" />
                 <p>Birth date</p>
                 <FormInput form={form} name="birthDate" type="date" />
                 <FormError form={form} name="birthDate" />

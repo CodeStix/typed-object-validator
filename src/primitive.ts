@@ -1,6 +1,6 @@
 import { SizeSchema, Schema, ErrorMap, ErrorType, ValidationContext, Validator, TransformationContext } from "./schemas";
 
-type StringCasing = "lower" | "upper" | "capitalize";
+type StringCasing = "lower" | "upper" | "capitalize" | "kebab-case" | "kebab-lower-case";
 
 export class StringSchema extends SizeSchema<string> {
     protected regexMatch?: RegExp;
@@ -40,17 +40,25 @@ export class StringSchema extends SizeSchema<string> {
     }
 
     public transform(value: string, context: TransformationContext = {}) {
-        if (this.trim ?? context.trimStrings ?? true) value = value.trim();
-        switch (this.casing) {
-            case "upper":
-                value = value.toUpperCase();
-                break;
-            case "lower":
-                value = value.toLowerCase();
-                break;
-            case "capitalize":
-                value = value.slice(0, 1).toUpperCase() + value.slice(1).toLowerCase();
-                break;
+        if (typeof value === "string") {
+            if (this.trim ?? context.trimStrings ?? true) value = value.trim();
+            switch (this.casing) {
+                case "upper":
+                    value = value.toUpperCase();
+                    break;
+                case "lower":
+                    value = value.toLowerCase();
+                    break;
+                case "capitalize":
+                    value = value.slice(0, 1).toUpperCase() + value.slice(1).toLowerCase();
+                    break;
+                case "kebab-case":
+                    value = value.split(" ").join("-");
+                    break;
+                case "kebab-lower-case":
+                    value = value.toLowerCase().split(" ").join("-");
+                    break;
+            }
         }
         return super.transform(value, context);
     }
@@ -150,13 +158,17 @@ export class ObjectSchema<T extends {}> extends Schema<T> {
     }
 
     public transform(value: T, context: TransformationContext = {}) {
-        let keys = Object.keys(this.fields) as (keyof T)[];
-        let obj: T = {} as any;
-        for (let i = 0; i < keys.length; i++) {
-            let key = keys[i];
-            obj[key] = this.fields[key].transform(value[key], context);
+        if (typeof value === "object" && value !== null) {
+            let keys = Object.keys(this.fields) as (keyof T)[];
+            let obj: T = {} as any;
+            for (let i = 0; i < keys.length; i++) {
+                let key = keys[i];
+                obj[key] = this.fields[key].transform(value[key], context);
+            }
+            return super.transform(obj, context);
+        } else {
+            return super.transform(value, context);
         }
-        return super.transform(obj, context);
     }
 }
 
