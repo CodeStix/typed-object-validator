@@ -76,18 +76,22 @@ export function email(invalidMessage?: string, requiredMessage?: string) {
     return new StringSchema(requiredMessage).regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, invalidMessage);
 }
 
+type NumberRounding = "ceil" | "round" | "floor";
+
 export class NumberSchema extends SizeSchema<number> {
     protected intMessage = "Must be integer";
     protected allowFloat?: boolean;
+
+    protected rounding?: NumberRounding;
 
     public constructor(requiredMessage?: string) {
         super(requiredMessage);
     }
 
-    public float(allow: boolean = true, message?: string) {
+    public float(allow: boolean = true, mustBeIntegerMessage?: string) {
         if (this.allowFloat !== undefined) throw new Error("Duplicate float() call");
         this.allowFloat = allow;
-        if (message) this.intMessage = message;
+        if (mustBeIntegerMessage) this.intMessage = mustBeIntegerMessage;
         return this;
     }
 
@@ -99,6 +103,27 @@ export class NumberSchema extends SizeSchema<number> {
         if (!(this.allowFloat ?? false) && !Number.isInteger(value)) return this.intMessage;
 
         return super.validateSize(value);
+    }
+
+    public doRound(rounding: NumberRounding = "floor") {
+        if (this.rounding) throw new Error("Duplicate doRound() call");
+        this.rounding = rounding;
+        return this;
+    }
+
+    public transform(value: number, context: TransformationContext) {
+        switch (this.rounding) {
+            case "ceil":
+                value = Math.ceil(value);
+                break;
+            case "floor":
+                value = Math.floor(value);
+                break;
+            case "round":
+                value = Math.round(value);
+                break;
+        }
+        return super.transform(value);
     }
 }
 

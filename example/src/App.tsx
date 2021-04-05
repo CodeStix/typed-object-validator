@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { AnyListener, FormError, FormInput, FormTextArea, Listener, useForm } from "typed-react-form";
-import tv from "typed-object-validator";
+import * as tv from "typed-object-validator";
 
 class UserClass {
     firstName!: string;
     lastName!: string;
-    title!: string | undefined;
-    data!: object | undefined;
     birthDate!: Date;
+    score!: number;
     gender!: "male" | "female";
 
     public printValues() {
@@ -15,14 +14,15 @@ class UserClass {
     }
 }
 
-const UserSchema = tv.object({
-    firstName: tv.string().doCase("capitalize").min(1, "Enter a first name"),
-    lastName: tv.string().doCase("capitalize").min(1, "Enter a last name"),
-    title: tv.string().doCase("kebab-lower-case").doSetWhenEmpty(undefined),
-    data: tv.object("Whoops").optional(),
-    birthDate: tv.date("Enter a birth date"),
-    gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
-});
+const UserSchema = tv
+    .object({
+        firstName: tv.string().doCase("capitalize").min(1, "Enter a first name"),
+        lastName: tv.string().doCase("capitalize").min(1, "Enter a last name"),
+        score: tv.number().doRound("round"),
+        birthDate: tv.date("Enter a birth date"),
+        gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
+    })
+    .doPrototype(UserClass.prototype);
 
 type User = tv.SchemaType<typeof UserSchema>;
 
@@ -38,16 +38,17 @@ function App() {
                     console.log("submit", form.values);
 
                     let user = UserSchema.transform(form.values as Required<User>);
-                })}>
+                })}
+            >
                 <p>First name</p>
                 <FormInput form={form} name="firstName" />
                 <FormError form={form} name="firstName" />
                 <p>Last name</p>
                 <FormInput form={form} name="lastName" />
                 <FormError form={form} name="lastName" />
-                <p>Title</p>
-                <FormTextArea form={form} name="title" />
-                <FormError form={form} name="title" />
+                <p>Score</p>
+                <FormInput type="number" form={form} name="score" />
+                <FormError form={form} name="score" />
                 <p>Birth date</p>
                 <FormInput form={form} name="birthDate" type="date" />
                 <FormError form={form} name="birthDate" />
