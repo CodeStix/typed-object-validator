@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AnyListener, FormError, FormInput, FormTextArea, Listener, useForm } from "typed-react-form";
-import * as tv from "typed-object-validator";
+import tv, { SchemaType } from "typed-object-validator";
 
 class UserClass {
     firstName!: string;
@@ -24,7 +24,7 @@ const UserSchema = tv
     })
     .doSetPrototype(UserClass.prototype);
 
-type User = tv.SchemaType<typeof UserSchema>;
+type User = SchemaType<typeof UserSchema>;
 
 function App() {
     const form = useForm<Partial<User>>(new UserClass(), (values) => UserSchema.validate(values, { abortEarly: false }) ?? ({} as any));
