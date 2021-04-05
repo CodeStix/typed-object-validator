@@ -128,12 +128,21 @@ export function value<T extends string | number | boolean | null | undefined>(va
     return new ValueSchema(value);
 }
 
-type ObjectKeySchemas<T> = {
+export class ObjectSchema extends Schema<object> {
+    public validate(value: object, context: ValidationContext) {
+        let n = this.validateNullable(value);
+        if (n !== null) return n;
+
+        if (typeof value !== "object") return "Must be object";
+    }
+}
+
+type MappedObjectKeySchemas<T> = {
     [Key in keyof T]: Schema<T[Key]>;
 };
 
-export class ObjectSchema<T extends {}> extends Schema<T> {
-    constructor(protected fields: ObjectKeySchemas<T>) {
+export class MappedObjectSchema<T extends {}> extends Schema<T> {
+    constructor(protected fields: MappedObjectKeySchemas<T>) {
         super();
     }
 
@@ -172,8 +181,14 @@ export class ObjectSchema<T extends {}> extends Schema<T> {
     }
 }
 
-export function object<T>(fields: ObjectKeySchemas<T>) {
-    return new ObjectSchema(fields);
+export function object<T>(fields: MappedObjectKeySchemas<T>): MappedObjectSchema<T>;
+export function object<T>(): ObjectSchema;
+export function object<T>(fields?: MappedObjectKeySchemas<T>) {
+    if (fields) {
+        return new MappedObjectSchema(fields);
+    } else {
+        return new ObjectSchema();
+    }
 }
 
 export type OrSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? D | OrSchemasToType<E> : never;

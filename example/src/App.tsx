@@ -7,6 +7,7 @@ const UserSchema = tv.object({
     firstName: tv.string().doTransformCase("capitalize").min(1, "Enter a first name"),
     lastName: tv.string().doTransformCase("capitalize").min(1, "Enter a last name"),
     title: tv.string().doTransformCase("kebab-lower-case"),
+    data: tv.object().nullable(),
     birthDate: tv.date("Enter a birth date"),
     gender: tv.value("male").or(tv.value("female")),
 });
