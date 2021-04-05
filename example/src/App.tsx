@@ -16,9 +16,9 @@ class UserClass {
 }
 
 const UserSchema = tv.object({
-    firstName: tv.string().doTransformCase("capitalize").min(1, "Enter a first name"),
-    lastName: tv.string().doTransformCase("capitalize").min(1, "Enter a last name"),
-    title: tv.string().doTransformCase("kebab-lower-case").doSetWhenEmpty(undefined),
+    firstName: tv.string().doCase("capitalize").min(1, "Enter a first name"),
+    lastName: tv.string().doCase("capitalize").min(1, "Enter a last name"),
+    title: tv.string().doCase("kebab-lower-case").doSetWhenEmpty(undefined),
     data: tv.object("Whoops").optional(),
     birthDate: tv.date("Enter a birth date"),
     gender: tv.value("male").or(tv.value("female"), "Please select male or female"),

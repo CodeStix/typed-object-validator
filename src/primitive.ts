@@ -25,7 +25,7 @@ export class StringSchema extends SizeSchema<string> {
         return this;
     }
 
-    public doTransformCase(casing: StringCasing) {
+    public doCase(casing: StringCasing) {
         if (this.casing) throw new Error("Duplicate doTransformCase() call");
         this.casing = casing;
         return this;
