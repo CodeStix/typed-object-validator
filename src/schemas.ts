@@ -6,7 +6,7 @@ export type ErrorMap<T, Error extends string = string> = {
     [Key in keyof T]?: ErrorType<T[Key], Error>;
 };
 
-export type Validator<T, Error extends string = string> = (value: T, context: ValidationContext) => ErrorType<T, Error> | undefined;
+export type Validator<T, Error extends string = string> = (value: unknown, context: ValidationContext) => ErrorType<T, Error> | undefined;
 
 export type Transformer<T> = (value: T) => T;
 
@@ -73,11 +73,11 @@ export abstract class Schema<T> {
 
     public abstract validate(value: unknown, context: ValidationContext): ErrorType<T> | undefined;
 
-    public transform(value: unknown, context: TransformationContext = {}): T {
-        if (this.customTransformer) value = this.customTransformer(value as T);
+    public transform(value: T, context: TransformationContext = {}): T {
+        if (this.customTransformer) value = this.customTransformer(value);
         if (this.whenEmptyValue) value = value ? value : this.whenEmptyValue.set;
         if (this.setPrototype) value = Object.assign(this.setPrototype, value);
-        return value as T;
+        return value;
     }
 }
 

@@ -43,31 +43,28 @@ export class StringSchema extends SizeSchema<string> {
         if (this.regexMatch && !this.regexMatch.exec(value)) return this.regexMessage;
     }
 
-    public transform(value: unknown, context: TransformationContext = {}) {
+    public transform(value: string, context: TransformationContext = {}) {
         if (typeof value === "string") {
-            let str = value as string;
-            if (this.trim ?? context.trimStrings ?? true) str = str.trim();
+            if (this.trim ?? context.trimStrings ?? true) value = value.trim();
             switch (this.casing) {
                 case "upper":
-                    str = str.toUpperCase();
+                    value = value.toUpperCase();
                     break;
                 case "lower":
-                    str = str.toLowerCase();
+                    value = value.toLowerCase();
                     break;
                 case "capitalize":
-                    str = str.slice(0, 1).toUpperCase() + str.slice(1).toLowerCase();
+                    value = value.slice(0, 1).toUpperCase() + value.slice(1).toLowerCase();
                     break;
                 case "kebab-case":
-                    str = str.split(" ").join("-");
+                    value = value.split(" ").join("-");
                     break;
                 case "kebab-lower-case":
-                    str = str.toLowerCase().split(" ").join("-");
+                    value = value.toLowerCase().split(" ").join("-");
                     break;
             }
-            return super.transform(str, context);
-        } else {
-            return super.transform(value, context);
         }
+        return super.transform(value, context);
     }
 }
 
@@ -185,7 +182,7 @@ export class MappedObjectSchema<T extends {}> extends Schema<T> {
         return Object.keys(err).length > 0 ? (err as ErrorType<T>) : undefined;
     }
 
-    public transform(value: unknown, context: TransformationContext = {}): T {
+    public transform(value: T, context: TransformationContext = {}): T {
         if (typeof value === "object" && value !== null) {
             let keys = Object.keys(this.fields) as (keyof T)[];
             let obj: T = {} as any;
@@ -232,7 +229,7 @@ export class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<
         return result;
     }
 
-    public transform(value: unknown, context: TransformationContext = {}) {
+    public transform(value: OrSchemasToType<T>, context: TransformationContext = {}) {
         // Look for the matching value
         for (let i = 0; i < this.schemas.length; i++) {
             let schema = this.schemas[i];
@@ -269,7 +266,7 @@ export class AndSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema
         }
     }
 
-    public transform(value: unknown, context: TransformationContext = {}) {
+    public transform(value: AndSchemasToType<T>, context: TransformationContext = {}) {
         for (let i = 0; i < this.schemas.length; i++) {
             value = this.schemas[i].transform(value, context);
         }
@@ -302,7 +299,7 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
         return Object.keys(err).length > 0 ? (err as ErrorType<TupleSchemasToType<T>>) : undefined;
     }
 
-    public transform(value: unknown, context: TransformationContext = {}) {
+    public transform(value: TupleSchemasToType<T>, context: TransformationContext = {}) {
         if (Array.isArray(value)) {
             let arr = new Array(this.schemas.length) as TupleSchemasToType<T>;
             for (let i = 0; i < this.schemas.length; i++) {
@@ -346,16 +343,12 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
         return Object.keys(err).length > 0 ? err : undefined;
     }
 
-    public transform(value: unknown, context: TransformationContext = {}) {
-        if (Array.isArray(value)) {
-            let arr = new Array(value.length) as T[];
-            for (let i = 0; i < value.length; i++) {
-                arr[i] = this.schema.transform(value[i], context);
-            }
-            return super.transform(arr, context);
-        } else {
-            return super.transform(value, context);
+    public transform(value: T[], context: TransformationContext = {}) {
+        let arr = new Array(value.length) as T[];
+        for (let i = 0; i < value.length; i++) {
+            arr[i] = this.schema.transform(value[i], context);
         }
+        return super.transform(arr, context);
     }
 }
 
@@ -396,8 +389,8 @@ export class DateSchema extends Schema<Date> {
         return this.invalidMessage;
     }
 
-    public transform(value: unknown, context: TransformationContext = {}) {
-        // Value can be string, number or Date, which the Date constructor all accepts
+    public transform(value: Date, context: TransformationContext = {}) {
+        // Value can be string, number or Date (see validate), which the Date constructor all accepts
         if (typeof value === "string" || typeof value === "number" || value instanceof Date) value = new Date(value);
 
         return super.transform(value, context);

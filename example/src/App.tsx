@@ -37,7 +37,7 @@ function App() {
                 onSubmit={form.handleSubmit(() => {
                     console.log("submit", form.values);
 
-                    let user = UserSchema.transform(form.values);
+                    let user = UserSchema.transform(form.values as Required<User>);
                 })}>
                 <p>First name</p>
                 <FormInput form={form} name="firstName" />
