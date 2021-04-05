@@ -28,31 +28,51 @@ export abstract class Schema<T> {
     private whenEmptyValue?: { set: T };
     private setPrototype?: T;
 
-    protected constructor(requiredMessage?: string, noNullMessage?: string) {
+    public constructor(requiredMessage?: string, noNullMessage?: string) {
         this.requiredMessage = requiredMessage ?? "Enter a value";
         this.noNullMessage = noNullMessage ?? "Null is not acceptable";
     }
 
+    /**
+     * Accepts undefined as a valid value for this field.
+     */
     public optional() {
         if (this.isOptional) throw new Error("Duplicate optional() call");
         this.isOptional = true;
         return this as Schema<T | undefined>;
     }
 
+    /**
+     * Accepts null as a valid value for this field.
+     */
     public nullable() {
         if (this.isNullable) throw new Error("Duplicate nullable() call");
         this.isNullable = true;
         return this as Schema<T | null>;
     }
 
+    /**
+     * Accepts this or the specified schema for this field.
+     * @param other The other validation schema that will be accepted too.
+     * @param requiredMessage The message to display when neither of the values were specified.
+     */
     public or<D>(other: Schema<D>, requiredMessage?: string): Schema<T | D> {
         return new OrSchema([this, other], requiredMessage) as Schema<T | D>;
     }
 
+    /**
+     * The value must match this and the specfied schema.
+     * @param other The other validation schema that must be accepted too.
+     * @param requiredMessage The message to display when the value is undefined.
+     */
     public and<D>(other: Schema<D>, requiredMessage?: string): Schema<T & D> {
         return new AndSchema([this, other], requiredMessage) as Schema<T & D>;
     }
 
+    /**
+     * Transforms this field (only when calling `transform()`) to the specified value when it is falsey/empty.
+     * @param valueToSet The value to set when it value is falsey/empty.
+     */
     public doSetWhenEmpty<D extends string>(valueToSet: D): Schema<T | D>;
     public doSetWhenEmpty<D extends any>(valueToSet: D): Schema<T | D>;
     public doSetWhenEmpty<D>(valueToSet: D): Schema<T | D> {
@@ -61,12 +81,20 @@ export abstract class Schema<T> {
         return this as Schema<T | D>;
     }
 
+    /**
+     * Executes a custom transfomer on this field. (only when calling `transform()`)
+     * @param transformer The transformation function to apply.
+     */
     public doCustom(transformer: Transformer<T>) {
         if (this.customTransformer) throw new Error("Duplicate doCustom() call");
         this.customTransformer = transformer;
         return this;
     }
 
+    /**
+     * Updates the prototype of this field. (only when calling `transform()`)
+     * @param prototype The prototype to set, use `MyClass.prototype`.
+     */
     public doSetPrototype<P extends T>(prototype: P): Schema<P> {
         if (this.setPrototype) throw new Error("Duplicate doPrototype() call");
         this.setPrototype = prototype;
@@ -79,12 +107,20 @@ export abstract class Schema<T> {
         return null;
     }
 
+    /**
+     * Validates any value to match this schema.
+     * @returns A matching error for each field or undefined when the passed value is valid.
+     */
     public abstract validate(value: unknown, context: ValidationContext): ErrorType<T> | undefined;
 
+    /**
+     * Applies all the transformers on this schema (each function starting with **do**) to the specified object.
+     * @returns The transformed value.
+     */
     public transform(value: T, context: TransformationContext = {}): T {
         if (this.customTransformer) value = this.customTransformer(value);
         if (this.whenEmptyValue) value = value ? value : this.whenEmptyValue.set;
-        if (this.setPrototype) value = Object.assign(this.setPrototype, value);
+        if (this.setPrototype && typeof value === "object") value = Object.assign(this.setPrototype, value);
         return value;
     }
 }
@@ -95,6 +131,11 @@ export abstract class SizeSchema<T> extends Schema<T> {
     protected maxValue?: number;
     protected maxMessage = "Must be shorter";
 
+    /**
+     * Limits the accepted minimum value/size for this field.
+     * @param min The minimum accepted value/size.
+     * @param message The error that will be returned when it is smaller that the said value.
+     */
     public min(min: number, message?: string): SizeSchema<T> {
         if (this.minValue !== undefined) throw new Error("Duplicate min() call");
         this.minValue = min;
@@ -102,6 +143,11 @@ export abstract class SizeSchema<T> extends Schema<T> {
         return this;
     }
 
+    /**
+     * Limits the accepted maximum value/size for this field.
+     * @param min The maximum accepted value/size.
+     * @param message The error that will be returned when it is bigger that the said value.
+     */
     public max(max: number, message?: string): SizeSchema<T> {
         if (this.maxValue !== undefined) throw new Error("Duplicate max() call");
         this.maxValue = max;
@@ -127,6 +173,11 @@ export class StringSchema extends SizeSchema<string> {
         super(requiredMessage);
     }
 
+    /**
+     * Requires this field to match a regex.
+     * @param regex The regex to match.
+     * @param message The error to return when it doesn't match.
+     */
     public regex(regex: string | RegExp, message?: string) {
         if (this.regexMatch) throw new Error("Duplicate regex() call");
         this.regexMatch = typeof regex === "string" ? new RegExp(regex) : regex;
@@ -134,12 +185,20 @@ export class StringSchema extends SizeSchema<string> {
         return this;
     }
 
+    /**
+     * Trim this string during transformation. **String trimming is enabled by default and can be overridden using `TransformationContext`**
+     * @param trim True to enable, false to disable trimming.
+     */
     public doTrim(trim = true) {
         if (this.trim !== undefined) throw new Error("Duplicate doTrim() call");
         this.trim = trim;
         return this;
     }
 
+    /**
+     * Transform this string's casing during transformation.
+     * @param casing The case transformation to apply.
+     */
     public doCase(casing: StringCasing) {
         if (this.casing) throw new Error("Duplicate doTransformCase() call");
         this.casing = casing;
