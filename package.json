@@ -3,7 +3,14 @@
     "version": "1.0.0",
     "main": "dist/index.js",
     "typings": "dist/index.d.ts",
+    "author": "Stijn Rogiest",
     "license": "MIT",
+    "keywords": [
+        "validation",
+        "typescript",
+        "typed validation",
+        "form validation"
+    ],
     "scripts": {
         "dev": "tsc --watch",
         "build": "rm -rf dist/ && microbundle --no-compress --format cjs"
