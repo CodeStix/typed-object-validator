@@ -91,7 +91,6 @@ export type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : 
 
 export interface ValidationContext {
     abortEarly?: boolean;
-    defaultMaxStringLength?: number;
 }
 
 export interface TransformationContext {
