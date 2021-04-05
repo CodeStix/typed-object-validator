@@ -12,33 +12,36 @@ export type Transformer<T> = (value: T) => T;
 
 export abstract class Schema<T> {
     protected isNullable = false;
-    protected isNullableMessage = "Null is not acceptable";
+    protected noNullMessage: string;
     protected isOptional = false;
-    protected isOptionalMessage = "Value must exist";
+    protected requiredMessage: string;
     protected customTransformer?: Transformer<T>;
     protected customValidator?: Validator<T>;
     protected whenEmptyValue?: { set: T };
 
-    public optional(message?: string) {
+    protected constructor(requiredMessage?: string, noNullMessage?: string) {
+        this.requiredMessage = requiredMessage ?? "Enter a value";
+        this.noNullMessage = noNullMessage ?? "Null is not acceptable";
+    }
+
+    public optional() {
         if (this.isOptional) throw new Error("Duplicate optional() call");
         this.isOptional = true;
-        if (message) this.isOptionalMessage = message;
         return this as Schema<T | undefined>;
     }
 
-    public nullable(message?: string) {
+    public nullable() {
         if (this.isNullable) throw new Error("Duplicate nullable() call");
         this.isNullable = true;
-        if (message) this.isNullableMessage = message;
         return this as Schema<T | null>;
     }
 
-    public or<D>(other: Schema<D>): Schema<T | D> {
-        return new OrSchema([this, other]) as Schema<T | D>;
+    public or<D>(other: Schema<D>, requiredMessage?: string): Schema<T | D> {
+        return new OrSchema([this, other], requiredMessage) as Schema<T | D>;
     }
 
-    public and<D>(other: Schema<D>): Schema<T & D> {
-        return new AndSchema([this, other]) as Schema<T & D>;
+    public and<D>(other: Schema<D>, requiredMessage?: string): Schema<T & D> {
+        return new AndSchema([this, other], requiredMessage) as Schema<T & D>;
     }
 
     public doSetWhenEmpty<D extends string>(valueToSet: D): Schema<T | D>;
@@ -55,8 +58,8 @@ export abstract class Schema<T> {
     }
 
     protected validateNullable(value: T): string | null | undefined {
-        if (value === undefined) return this.isOptional ? undefined : this.isOptionalMessage;
-        if (value === null) return this.isNullable ? undefined : this.isNullableMessage;
+        if (value === undefined) return this.isOptional ? undefined : this.requiredMessage;
+        if (value === null) return this.isNullable ? undefined : this.noNullMessage;
         return null;
     }
 

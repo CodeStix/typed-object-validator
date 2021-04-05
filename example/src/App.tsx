@@ -3,12 +3,12 @@ import { AnyListener, FormError, FormInput, FormTextArea, Listener, useForm } fr
 import * as tv from "typed-object-validator";
 
 const UserSchema = tv.object({
-    firstName: tv.string().doTransformCase("capitalize").min(1, "Enter a first name").doSetWhenEmpty("nice"),
+    firstName: tv.string().doTransformCase("capitalize").min(1, "Enter a first name"),
     lastName: tv.string().doTransformCase("capitalize").min(1, "Enter a last name"),
-    title: tv.string().doTransformCase("kebab-lower-case"),
-    data: tv.object().optional(),
+    title: tv.string().doTransformCase("kebab-lower-case").doSetWhenEmpty(undefined),
+    data: tv.object("Whoops").optional(),
     birthDate: tv.date("Enter a birth date"),
-    gender: tv.value("male").or(tv.value("female")).doSetWhenEmpty("custom"),
+    gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
 });
 
 type User = tv.SchemaType<typeof UserSchema>;

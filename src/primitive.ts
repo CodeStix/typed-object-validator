@@ -8,6 +8,10 @@ export class StringSchema extends SizeSchema<string> {
     protected trim?: boolean;
     protected casing?: StringCasing;
 
+    public constructor(requiredMessage?: string) {
+        super(requiredMessage);
+    }
+
     public regex(regex: string | RegExp, message?: string) {
         if (this.regexMatch) throw new Error("Duplicate regex() call");
         this.regexMatch = typeof regex === "string" ? new RegExp(regex) : regex;
@@ -64,17 +68,21 @@ export class StringSchema extends SizeSchema<string> {
     }
 }
 
-export function string(): StringSchema {
-    return new StringSchema();
+export function string(requiredMessage?: string): StringSchema {
+    return new StringSchema(requiredMessage);
 }
 
-export function email(invalidMessage?: string) {
-    return new StringSchema().regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, invalidMessage);
+export function email(invalidMessage?: string, requiredMessage?: string) {
+    return new StringSchema(requiredMessage).regex(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, invalidMessage);
 }
 
 export class NumberSchema extends SizeSchema<number> {
     protected intMessage = "Must be integer";
     protected allowFloat?: boolean;
+
+    public constructor(requiredMessage?: string) {
+        super(requiredMessage);
+    }
 
     public float(allow: boolean = true, message?: string) {
         if (this.allowFloat !== undefined) throw new Error("Duplicate float() call");
@@ -94,11 +102,15 @@ export class NumberSchema extends SizeSchema<number> {
     }
 }
 
-export function number(): NumberSchema {
-    return new NumberSchema();
+export function number(requiredMessage?: string): NumberSchema {
+    return new NumberSchema(requiredMessage);
 }
 
 export class BooleanSchema extends Schema<boolean> {
+    public constructor(requiredMessage?: string) {
+        super(requiredMessage);
+    }
+
     public validate(value: boolean, context: ValidationContext = {}) {
         let n = super.validateNullable(value);
         if (n !== null) return n;
@@ -107,28 +119,32 @@ export class BooleanSchema extends Schema<boolean> {
     }
 }
 
-export function boolean(): BooleanSchema {
-    return new BooleanSchema();
+export function boolean(requiredMessage?: string): BooleanSchema {
+    return new BooleanSchema(requiredMessage);
 }
 
 export class ValueSchema<T> extends Schema<T> {
-    constructor(protected value: T) {
-        super();
+    public constructor(protected value: T, requiredMessage?: string) {
+        super(requiredMessage);
     }
 
     public validate(value: T, context: ValidationContext = {}) {
         let n = this.validateNullable(value);
         if (n !== null) return n;
 
-        if (this.value !== value) return "Invalid value";
+        if (this.value !== value) return super.requiredMessage;
     }
 }
 
-export function value<T extends string | number | boolean | null | undefined>(value: T): Schema<T> {
-    return new ValueSchema(value);
+export function value<T extends string | number | boolean | null | undefined>(value: T, requiredMessage?: string): Schema<T> {
+    return new ValueSchema(value, requiredMessage);
 }
 
 export class ObjectSchema extends Schema<object> {
+    public constructor(requiredMessage?: string) {
+        super(requiredMessage);
+    }
+
     public validate(value: object, context: ValidationContext) {
         let n = this.validateNullable(value);
         if (n !== null) return n;
@@ -142,8 +158,8 @@ type MappedObjectKeySchemas<T> = {
 };
 
 export class MappedObjectSchema<T extends {}> extends Schema<T> {
-    constructor(protected fields: MappedObjectKeySchemas<T>) {
-        super();
+    public constructor(protected fields: MappedObjectKeySchemas<T>, requiredMessage?: string) {
+        super(requiredMessage);
     }
 
     public validate(value: T, context: ValidationContext = {}) {
@@ -181,21 +197,21 @@ export class MappedObjectSchema<T extends {}> extends Schema<T> {
     }
 }
 
-export function object<T>(fields: MappedObjectKeySchemas<T>): MappedObjectSchema<T>;
-export function object<T>(): ObjectSchema;
-export function object<T>(fields?: MappedObjectKeySchemas<T>) {
-    if (fields) {
-        return new MappedObjectSchema(fields);
+export function object<T>(fields: MappedObjectKeySchemas<T>, requiredMessage?: string): MappedObjectSchema<T>;
+export function object<T>(requiredMessage?: string): ObjectSchema;
+export function object() {
+    if (typeof arguments[0] === "object") {
+        return new MappedObjectSchema(arguments[0], arguments[1]);
     } else {
-        return new ObjectSchema();
+        return new ObjectSchema(arguments[0] ?? arguments[1]);
     }
 }
 
 export type OrSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? D | OrSchemasToType<E> : never;
 
 export class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<OrSchemasToType<T>> {
-    constructor(protected schemas: T) {
-        super();
+    constructor(protected schemas: T, requiredMessage?: string) {
+        super(requiredMessage);
     }
 
     public validate(value: OrSchemasToType<T>, context: ValidationContext = {}) {
@@ -226,15 +242,15 @@ export class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<
     }
 }
 
-export function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schema<OrSchemasToType<T>> {
-    return new OrSchema(schemas);
+export function or<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T, requiredMessage?: string): Schema<OrSchemasToType<T>> {
+    return new OrSchema(schemas, requiredMessage);
 }
 
 export type AndSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? D & AndSchemasToType<E> : never;
 
 export class AndSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<AndSchemasToType<T>> {
-    constructor(protected schemas: T) {
-        super();
+    constructor(protected schemas: T, requiredMessage?: string) {
+        super(requiredMessage);
     }
 
     public validate(value: AndSchemasToType<T>, context: ValidationContext = {}) {
@@ -261,8 +277,8 @@ export class AndSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema
 export type TupleSchemasToType<T> = T extends [Schema<infer D>, ...infer E] ? [D, ...TupleSchemasToType<E>] : [];
 
 export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<TupleSchemasToType<T>> {
-    constructor(protected schemas: T) {
-        super();
+    constructor(protected schemas: T, requiredMessage?: string) {
+        super(requiredMessage);
     }
 
     public validate(value: TupleSchemasToType<T>, context: ValidationContext = {}) {
@@ -293,13 +309,13 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
     }
 }
 
-export function tuple<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T): Schema<TupleSchemasToType<T>> {
-    return new TupleSchema(schemas);
+export function tuple<T extends [Schema<any>, ...Schema<any>[]]>(schemas: T, requiredMessage?: string): Schema<TupleSchemasToType<T>> {
+    return new TupleSchema(schemas, requiredMessage);
 }
 
 export class ArraySchema<T> extends SizeSchema<T[]> {
-    constructor(protected schema: Schema<T>) {
-        super();
+    constructor(protected schema: Schema<T>, requiredMessage?: string) {
+        super(requiredMessage);
     }
 
     public validate(value: T[], context: ValidationContext = {}) {
@@ -333,13 +349,13 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
     }
 }
 
-export function array<T>(schema: Schema<T>) {
-    return new ArraySchema(schema);
+export function array<T>(schema: Schema<T>, requiredMessage?: string) {
+    return new ArraySchema(schema, requiredMessage);
 }
 
 export class CustomSchema<T> extends Schema<T> {
-    constructor(protected validator: Validator<T>) {
-        super();
+    constructor(protected validator: Validator<T>, requiredMessage?: string) {
+        super(requiredMessage);
     }
 
     public validate(value: T, context: ValidationContext = { abortEarly: true }): ErrorType<T, string> | undefined {
@@ -347,19 +363,22 @@ export class CustomSchema<T> extends Schema<T> {
     }
 }
 
-export function custom<T>(validator: Validator<T>) {
-    return new CustomSchema(validator);
+export function custom<T>(validator: Validator<T>, requiredMessage?: string) {
+    return new CustomSchema(validator, requiredMessage);
 }
 
 export class DateSchema extends Schema<Date> {
-    protected invalidMessage = "Invalid date";
+    protected invalidMessage: string;
 
-    constructor(invalidMessage?: string) {
-        super();
-        if (invalidMessage) this.invalidMessage = invalidMessage;
+    constructor(requiredMessage?: string, invalidDateMessage?: string) {
+        super(requiredMessage);
+        this.invalidMessage = invalidDateMessage ?? "Invalid date";
     }
 
     public validate(value: Date, context: ValidationContext = {}): string | undefined {
+        let n = super.validateNullable(value);
+        if (n !== null) return n;
+
         if (typeof value === "string" || typeof value === "number" || value instanceof Date) {
             let d = new Date(value);
             if (!isNaN(d.getTime())) return undefined;
@@ -373,6 +392,6 @@ export class DateSchema extends Schema<Date> {
     }
 }
 
-export function date(invalidMessage?: string) {
-    return new DateSchema(invalidMessage);
+export function date(requiredMessage?: string, invalidMessage?: string) {
+    return new DateSchema(requiredMessage, invalidMessage);
 }
