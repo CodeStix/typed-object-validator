@@ -254,10 +254,25 @@ export class NumberSchema extends SizeSchema<number> {
         super(requiredMessage);
     }
 
+    /**
+     * Allows this field to have a decimal point. (**All number fields must be integer by default**)
+     * @param allow True to allow a decimal point, false to not.
+     * @param mustBeIntegerMessage The error to return if the value has a decimal point while it isn't allowed
+     */
     public float(allow: boolean = true, mustBeIntegerMessage?: string) {
         if (this.allowFloat !== undefined) throw new Error("Duplicate float() call");
         this.allowFloat = allow;
         if (mustBeIntegerMessage) this.intMessage = mustBeIntegerMessage;
+        return this;
+    }
+
+    /**
+     * Rounds this number field during transformation.
+     * @param rounding The rounding method to apply.
+     */
+    public doRound(rounding: NumberRounding = "floor") {
+        if (this.rounding) throw new Error("Duplicate doRound() call");
+        this.rounding = rounding;
         return this;
     }
 
@@ -269,12 +284,6 @@ export class NumberSchema extends SizeSchema<number> {
         if (!(this.allowFloat ?? false) && !Number.isInteger(value)) return this.intMessage;
 
         return super.validateSize(value);
-    }
-
-    public doRound(rounding: NumberRounding = "floor") {
-        if (this.rounding) throw new Error("Duplicate doRound() call");
-        this.rounding = rounding;
-        return this;
     }
 
     public transform(value: number, context: TransformationContext) {
