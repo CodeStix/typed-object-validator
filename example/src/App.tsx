@@ -22,7 +22,7 @@ const UserSchema = tv
         birthDate: tv.date("Enter a birth date"),
         gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
     })
-    .doPrototype(UserClass.prototype);
+    .doSetPrototype(UserClass.prototype);
 
 type User = tv.SchemaType<typeof UserSchema>;
 

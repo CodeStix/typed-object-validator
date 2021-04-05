@@ -59,7 +59,7 @@ export abstract class Schema<T> {
         return this;
     }
 
-    public doPrototype<P extends T>(prototype: P): Schema<P> {
+    public doSetPrototype<P extends T>(prototype: P): Schema<P> {
         if (this.setPrototype) throw new Error("Duplicate doPrototype() call");
         this.setPrototype = prototype;
         return this as any;
