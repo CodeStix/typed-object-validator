@@ -15,9 +15,10 @@ export abstract class Schema<T> {
     protected noNullMessage: string;
     protected isOptional = false;
     protected requiredMessage: string;
-    protected customTransformer?: Transformer<T>;
-    protected customValidator?: Validator<T>;
-    protected whenEmptyValue?: { set: T };
+
+    private customTransformer?: Transformer<T>;
+    private whenEmptyValue?: { set: T };
+    private setPrototype?: T;
 
     protected constructor(requiredMessage?: string, noNullMessage?: string) {
         this.requiredMessage = requiredMessage ?? "Enter a value";
@@ -53,8 +54,15 @@ export abstract class Schema<T> {
     }
 
     public doCustom(transformer: Transformer<T>) {
+        if (this.customTransformer) throw new Error("Duplicate doCustom() call");
         this.customTransformer = transformer;
         return this;
+    }
+
+    public doPrototype<P extends T>(prototype: P): Schema<P> {
+        if (this.setPrototype) throw new Error("Duplicate doPrototype() call");
+        this.setPrototype = prototype;
+        return this as any;
     }
 
     protected validateNullable(value: T): string | null | undefined {
@@ -65,9 +73,10 @@ export abstract class Schema<T> {
 
     public abstract validate(value: T, context: ValidationContext): ErrorType<T> | undefined;
 
-    public transform(value: T, context: TransformationContext) {
+    public transform(value: T, context: TransformationContext = {}) {
         if (this.customTransformer) value = this.customTransformer(value);
         if (this.whenEmptyValue) value = value ? value : this.whenEmptyValue.set;
+        if (this.setPrototype) value = Object.assign(this.setPrototype, value);
         return value;
     }
 }
