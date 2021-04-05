@@ -5,7 +5,7 @@ import * as tv from "typed-object-validator";
 class UserClass {
     firstName!: string;
     lastName!: string;
-    title!: string;
+    title!: string | undefined;
     data!: object | undefined;
     birthDate!: Date;
     gender!: "male" | "female";
@@ -15,21 +15,19 @@ class UserClass {
     }
 }
 
-const UserSchema = tv
-    .object({
-        firstName: tv.string().doTransformCase("capitalize").min(1, "Enter a first name"),
-        lastName: tv.string().doTransformCase("capitalize").min(1, "Enter a last name"),
-        title: tv.string().doTransformCase("kebab-lower-case").doSetWhenEmpty(undefined),
-        data: tv.object("Whoops").optional(),
-        birthDate: tv.date("Enter a birth date"),
-        gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
-    })
-    .doPrototype(UserClass.prototype);
+const UserSchema = tv.object({
+    firstName: tv.string().doTransformCase("capitalize").min(1, "Enter a first name"),
+    lastName: tv.string().doTransformCase("capitalize").min(1, "Enter a last name"),
+    title: tv.string().doTransformCase("kebab-lower-case").doSetWhenEmpty(undefined),
+    data: tv.object("Whoops").optional(),
+    birthDate: tv.date("Enter a birth date"),
+    gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
+});
 
 type User = tv.SchemaType<typeof UserSchema>;
 
 function App() {
-    const form = useForm<Partial<User>>(new UserClass(), (values) => UserSchema.validate(values as any, { abortEarly: false }) ?? ({} as any));
+    const form = useForm<Partial<User>>(new UserClass(), (values) => UserSchema.validate(values, { abortEarly: false }) ?? ({} as any));
 
     return (
         <div>
@@ -39,8 +37,7 @@ function App() {
                 onSubmit={form.handleSubmit(() => {
                     console.log("submit", form.values);
 
-                    let user = UserSchema.transform(form.values as any);
-                    user.printValues();
+                    let user = UserSchema.transform(form.values);
                 })}>
                 <p>First name</p>
                 <FormInput form={form} name="firstName" />

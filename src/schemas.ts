@@ -65,19 +65,19 @@ export abstract class Schema<T> {
         return this as any;
     }
 
-    protected validateNullable(value: T): string | null | undefined {
+    protected validateNullable(value: unknown): string | null | undefined {
         if (value === undefined) return this.isOptional ? undefined : this.requiredMessage;
         if (value === null) return this.isNullable ? undefined : this.noNullMessage;
         return null;
     }
 
-    public abstract validate(value: T, context: ValidationContext): ErrorType<T> | undefined;
+    public abstract validate(value: unknown, context: ValidationContext): ErrorType<T> | undefined;
 
-    public transform(value: T, context: TransformationContext = {}) {
-        if (this.customTransformer) value = this.customTransformer(value);
+    public transform(value: unknown, context: TransformationContext = {}): T {
+        if (this.customTransformer) value = this.customTransformer(value as T);
         if (this.whenEmptyValue) value = value ? value : this.whenEmptyValue.set;
         if (this.setPrototype) value = Object.assign(this.setPrototype, value);
-        return value;
+        return value as T;
     }
 }
 
