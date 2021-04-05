@@ -388,7 +388,9 @@ export class DateSchema extends Schema<Date> {
 
     public transform(value: Date, context: TransformationContext = {}) {
         // Value can be string, number or Date, which the Date constructor all accepts
-        return new Date(value);
+        if (typeof value === "string" || typeof value === "number" || value instanceof Date) value = new Date(value);
+
+        return super.transform(value, context);
     }
 }
 

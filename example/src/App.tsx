@@ -14,7 +14,6 @@ const UserSchema = tv.object({
 type User = tv.SchemaType<typeof UserSchema>;
 
 function App() {
-    const [submitted, setSubmitted] = useState<User>();
     const form = useForm<Partial<User>>(
         { firstName: "", lastName: "" },
         (values) => UserSchema.validate(values as any, { abortEarly: false }) ?? ({} as any)
@@ -27,7 +26,6 @@ function App() {
                 onReset={() => form.resetAll(false)}
                 onSubmit={form.handleSubmit(() => {
                     console.log("submit", form.values);
-                    setSubmitted({ ...form.values } as User);
                 })}>
                 <p>First name</p>
                 <FormInput form={form} name="firstName" />
@@ -64,6 +62,12 @@ function App() {
                     <AnyListener form={form} render={() => JSON.stringify(form.values, null, 2)} />
                 </pre>
             </div>
+            {/* <div style={{ margin: "2em" }}>
+                <h2>Errors</h2>
+                <pre>
+                    <AnyListener form={form} render={() => JSON.stringify(form.errorMap, null, 2)} />
+                </pre>
+            </div> */}
             <div style={{ margin: "2em" }}>
                 <h2>Transformed Output</h2>
                 <pre>
