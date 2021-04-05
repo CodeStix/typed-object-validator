@@ -1,9 +1,12 @@
-import { SizeSchema, Schema, ErrorMap, ErrorType, ValidationContext, Validator } from "./schemas";
+import { SizeSchema, Schema, ErrorMap, ErrorType, ValidationContext, Validator, TransformationContext } from "./schemas";
+
+type StringCasing = "lower" | "upper" | "capitalize";
 
 export class StringSchema extends SizeSchema<string> {
     protected regexMatch?: RegExp;
     protected regexMessage = "Does not match regex";
-    protected trim = false;
+    protected trim?: boolean;
+    protected casing?: StringCasing;
 
     public regex(regex: string | RegExp, message?: string) {
         if (this.regexMatch) throw new Error("Duplicate regex() call");
@@ -13,11 +16,18 @@ export class StringSchema extends SizeSchema<string> {
     }
 
     public doTrim(trim = true) {
+        if (this.trim !== undefined) throw new Error("Duplicate doTrim() call");
         this.trim = trim;
         return this;
     }
 
-    public validate(value: string) {
+    public doTransformCase(casing: StringCasing) {
+        if (this.casing) throw new Error("Duplicate doTransformCase() call");
+        this.casing = casing;
+        return this;
+    }
+
+    public validate(value: string, context: ValidationContext = {}) {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
@@ -29,9 +39,20 @@ export class StringSchema extends SizeSchema<string> {
         if (this.regexMatch && !this.regexMatch.exec(value)) return this.regexMessage;
     }
 
-    public transform(value: string) {
-        if (this.trim) value = value.trim();
-        return super.transform(value);
+    public transform(value: string, context: TransformationContext = {}) {
+        if (this.trim ?? context.trimStrings ?? true) value = value.trim();
+        switch (this.casing) {
+            case "upper":
+                value = value.toUpperCase();
+                break;
+            case "lower":
+                value = value.toLowerCase();
+                break;
+            case "capitalize":
+                value = value.slice(0, 1).toUpperCase() + value.slice(1).toLowerCase();
+                break;
+        }
+        return super.transform(value, context);
     }
 }
 
@@ -54,7 +75,7 @@ export class NumberSchema extends SizeSchema<number> {
         return this;
     }
 
-    public validate(value: number) {
+    public validate(value: number, context: ValidationContext = {}) {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
@@ -70,7 +91,7 @@ export function number(): NumberSchema {
 }
 
 export class BooleanSchema extends Schema<boolean> {
-    public validate(value: boolean) {
+    public validate(value: boolean, context: ValidationContext = {}) {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
@@ -87,7 +108,7 @@ export class ValueSchema<T> extends Schema<T> {
         super();
     }
 
-    public validate(value: T) {
+    public validate(value: T, context: ValidationContext = {}) {
         let n = this.validateNullable(value);
         if (n !== null) return n;
 
@@ -108,7 +129,7 @@ export class ObjectSchema<T extends {}> extends Schema<T> {
         super();
     }
 
-    public validate(value: T, context: ValidationContext = { abortEarly: true }) {
+    public validate(value: T, context: ValidationContext = {}) {
         let n = this.validateNullable(value);
         if (n !== null) return n;
 
@@ -122,20 +143,20 @@ export class ObjectSchema<T extends {}> extends Schema<T> {
             let result = this.fields[key].validate(field, context);
             if (result !== undefined) {
                 err[key] = result;
-                if (context.abortEarly) return err as ErrorType<T>;
+                if (context.abortEarly ?? true) return err as ErrorType<T>;
             }
         }
         return Object.keys(err).length > 0 ? (err as ErrorType<T>) : undefined;
     }
 
-    public transform(value: T) {
+    public transform(value: T, context: TransformationContext = {}) {
         let keys = Object.keys(this.fields) as (keyof T)[];
         let obj: T = {} as any;
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
-            obj[key] = this.fields[key].transform(value[key]);
+            obj[key] = this.fields[key].transform(value[key], context);
         }
-        return super.transform(obj);
+        return super.transform(obj, context);
     }
 }
 
@@ -150,7 +171,7 @@ export class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<
         super();
     }
 
-    public validate(value: OrSchemasToType<T>, context?: ValidationContext) {
+    public validate(value: OrSchemasToType<T>, context: ValidationContext = {}) {
         let n = this.validateNullable(value);
         if (n !== null) return n;
 
@@ -165,16 +186,16 @@ export class OrSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema<
         return result;
     }
 
-    public transform(value: OrSchemasToType<T>) {
+    public transform(value: OrSchemasToType<T>, context: TransformationContext = {}) {
         // Look for the matching value
         for (let i = 0; i < this.schemas.length; i++) {
             let schema = this.schemas[i];
-            if (schema.validate(value) === undefined) {
-                value = schema.transform(value);
+            if (schema.validate(value, {}) === undefined) {
+                value = schema.transform(value, context);
                 break;
             }
         }
-        return super.transform(value);
+        return super.transform(value, context);
     }
 }
 
@@ -189,7 +210,7 @@ export class AndSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema
         super();
     }
 
-    public validate(value: AndSchemasToType<T>, context?: ValidationContext) {
+    public validate(value: AndSchemasToType<T>, context: ValidationContext = {}) {
         let n = this.validateNullable(value);
         if (n !== null) return n;
 
@@ -202,11 +223,11 @@ export class AndSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Schema
         }
     }
 
-    public transform(value: AndSchemasToType<T>) {
+    public transform(value: AndSchemasToType<T>, context: TransformationContext = {}) {
         for (let i = 0; i < this.schemas.length; i++) {
-            value = this.schemas[i].transform(value);
+            value = this.schemas[i].transform(value, context);
         }
-        return super.transform(value);
+        return super.transform(value, context);
     }
 }
 
@@ -217,7 +238,7 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
         super();
     }
 
-    public validate(value: TupleSchemasToType<T>, context: ValidationContext = { abortEarly: true }) {
+    public validate(value: TupleSchemasToType<T>, context: ValidationContext = {}) {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
@@ -229,19 +250,19 @@ export class TupleSchema<T extends [Schema<any>, ...Schema<any>[]]> extends Sche
             let result = schema.validate(value[i], context);
             if (result !== undefined) {
                 err[i] = result as any;
-                if (context.abortEarly) return err as ErrorType<TupleSchemasToType<T>>;
+                if (context.abortEarly ?? true) return err as ErrorType<TupleSchemasToType<T>>;
             }
         }
         return Object.keys(err).length > 0 ? (err as ErrorType<TupleSchemasToType<T>>) : undefined;
     }
 
-    public transform(value: TupleSchemasToType<T>) {
+    public transform(value: TupleSchemasToType<T>, context: TransformationContext = {}) {
         let arr = new Array(this.schemas.length) as TupleSchemasToType<T>;
         for (let i = 0; i < this.schemas.length; i++) {
             let schema = this.schemas[i];
-            arr[i] = schema.transform(value[i]);
+            arr[i] = schema.transform(value[i], context);
         }
-        return super.transform(arr);
+        return super.transform(arr, context);
     }
 }
 
@@ -254,7 +275,7 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
         super();
     }
 
-    public validate(value: T[], context: ValidationContext = { abortEarly: true }) {
+    public validate(value: T[], context: ValidationContext = {}) {
         let n = super.validateNullable(value);
         if (n !== null) return n;
 
@@ -269,18 +290,18 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
             let result = this.schema.validate(item, context);
             if (result !== undefined) {
                 err[i] = result;
-                if (context.abortEarly) return err;
+                if (context.abortEarly ?? true) return err;
             }
         }
         return Object.keys(err).length > 0 ? err : undefined;
     }
 
-    public transform(value: T[]) {
+    public transform(value: T[], context: TransformationContext = {}) {
         let arr = new Array(value.length) as T[];
         for (let i = 0; i < value.length; i++) {
-            arr[i] = this.schema.transform(value[i]);
+            arr[i] = this.schema.transform(value[i], context);
         }
-        return super.transform(arr);
+        return super.transform(arr, context);
     }
 }
 
@@ -310,7 +331,7 @@ export class DateSchema extends Schema<Date> {
         if (invalidMessage) this.invalidMessage = invalidMessage;
     }
 
-    public validate(value: Date, context?: ValidationContext): string | undefined {
+    public validate(value: Date, context: ValidationContext = {}): string | undefined {
         if (typeof value === "string" || typeof value === "number" || value instanceof Date) {
             let d = new Date(value);
             if (!isNaN(d.getTime())) return undefined;
@@ -318,7 +339,7 @@ export class DateSchema extends Schema<Date> {
         return this.invalidMessage;
     }
 
-    public transform(value: Date) {
+    public transform(value: Date, context: TransformationContext = {}) {
         // Value can be string, number or Date, which the Date constructor all accepts
         return new Date(value);
     }

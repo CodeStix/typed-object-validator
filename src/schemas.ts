@@ -53,9 +53,9 @@ export abstract class Schema<T> {
         return null;
     }
 
-    public abstract validate(value: T, context?: ValidationContext): ErrorType<T> | undefined;
+    public abstract validate(value: T, context: ValidationContext): ErrorType<T> | undefined;
 
-    public transform(value: T) {
+    public transform(value: T, context: TransformationContext) {
         if (this.customTransformer) value = this.customTransformer(value);
         return value;
     }
@@ -90,5 +90,10 @@ export abstract class SizeSchema<T extends number | { length: number }> extends 
 export type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : never;
 
 export interface ValidationContext {
-    abortEarly: boolean;
+    abortEarly?: boolean;
+    defaultMaxStringLength?: number;
+}
+
+export interface TransformationContext {
+    trimStrings?: boolean;
 }

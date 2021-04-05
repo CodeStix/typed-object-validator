@@ -21,8 +21,8 @@ const QuestionnaireSchema = tv.object({
 });
 
 const RegisterSchema = tv.object({
-    firstName: tv.string().doTrim().min(2, "First name must be longer").max(20),
-    lastName: tv.string().doTrim().min(2, "Last name must be longer").max(20),
+    firstName: tv.string().min(2, "First name must be longer").max(20),
+    lastName: tv.string().min(2, "Last name must be longer").max(20),
     gender: tv.value("male").or(tv.value("female")),
     email: tv.email("Invalid email"),
     birthDate: tv.date(),
@@ -59,7 +59,7 @@ app.post("/register", (req, res, next) => {
             error: err,
         });
     } else {
-        console.log(data, RegisterSchema.transform(data));
+        console.log(data, RegisterSchema.validate(data));
         res.json({
             status: "ok",
             data: RegisterSchema.transform(data),
