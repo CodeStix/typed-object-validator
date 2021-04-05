@@ -70,7 +70,7 @@ export abstract class Schema<T> {
     }
 
     /**
-     * Transforms this field (only when calling `transform()`) to the specified value when it is falsey/empty.
+     * Transforms this field to the specified value when it is falsey/empty during transformation.
      * @param valueToSet The value to set when it value is falsey/empty.
      */
     public doSetWhenEmpty<D extends string>(valueToSet: D): Schema<T | D>;
@@ -82,7 +82,7 @@ export abstract class Schema<T> {
     }
 
     /**
-     * Executes a custom transfomer on this field. (only when calling `transform()`)
+     * Executes a custom transfomer on this field during transformation.
      * @param transformer The transformation function to apply.
      */
     public doCustom(transformer: Transformer<T>) {
@@ -92,7 +92,7 @@ export abstract class Schema<T> {
     }
 
     /**
-     * Updates the prototype of this field. (only when calling `transform()`)
+     * Updates the prototype of this field during transformation.
      * @param prototype The prototype to set, use `MyClass.prototype`.
      */
     public doSetPrototype<P extends T>(prototype: P): Schema<P> {
