@@ -324,7 +324,7 @@ export class ValueSchema<T> extends Schema<T> {
         let n = this.validateNullable(value);
         if (n !== null) return n;
 
-        if (this.value !== value) return super.requiredMessage;
+        if (this.value !== value) return this.requiredMessage;
     }
 }
 
