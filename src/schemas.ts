@@ -12,10 +12,12 @@ export type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : 
 
 export interface ValidationContext {
     abortEarly?: boolean;
+    state?: any;
 }
 
 export interface TransformationContext {
     trimStrings?: boolean;
+    state?: any;
 }
 
 export abstract class Schema<T> {
