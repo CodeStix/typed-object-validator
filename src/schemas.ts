@@ -6,7 +6,7 @@ export type ErrorMap<T, Error extends string = string> = {
 
 export type Validator<T, Error extends string = string> = (value: unknown, context: ValidationContext) => ErrorType<T, Error> | undefined;
 
-export type Transformer<T> = (value: T) => T;
+export type Transformer<T> = (value: T, context: TransformationContext) => T;
 
 export type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : never;
 
@@ -118,7 +118,7 @@ export abstract class Schema<T> {
      * @returns The transformed value.
      */
     public transform(value: T, context: TransformationContext = {}): T {
-        if (this.customTransformer) value = this.customTransformer(value);
+        if (this.customTransformer) value = this.customTransformer(value, context);
         if (this.whenEmptyValue) value = value ? value : this.whenEmptyValue.set;
         if (this.setPrototype && typeof value === "object") value = Object.assign(this.setPrototype, value);
         return value;
