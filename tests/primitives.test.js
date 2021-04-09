@@ -87,3 +87,8 @@ test("boolean schema", () => {
     expect(tv.boolean().optional().nullable().validate(true)).toBeUndefined();
     expect(tv.boolean().optional().nullable().validate("test")).not.toBeUndefined();
 });
+
+test("value schema", () => {
+    expect(tv.value("toast", "Invalid").validate("asdf")).toBe("Invalid");
+    expect(tv.value("toast", "Invalid toast").or(tv.value("bread", "Invalid bread")).validate("asdf")).toBe("Invalid bread");
+});
