@@ -5,6 +5,7 @@
     "typings": "dist/index.d.ts",
     "author": "Stijn Rogiest",
     "license": "MIT",
+    "repository": "CodeStix/typed-object-validator",
     "keywords": [
         "validation",
         "typescript",
