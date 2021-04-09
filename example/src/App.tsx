@@ -14,15 +14,13 @@ class UserClass {
     }
 }
 
-const UserSchema = tv
-    .object({
-        firstName: tv.string().doCase("capitalize").min(1, "Enter a first name"),
-        lastName: tv.string().doCase("capitalize").min(1, "Enter a last name"),
-        score: tv.number().doRound("round"),
-        birthDate: tv.date("Enter a birth date"),
-        gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
-    })
-    .doSetPrototype(UserClass.prototype);
+const UserSchema = tv.object({
+    firstName: tv.string().doCase("capitalize").min(1, "Enter a first name"),
+    lastName: tv.string().doCase("capitalize").min(1, "Enter a last name"),
+    score: tv.number().doRound("round"),
+    birthDate: tv.date("Enter a birth date"),
+    gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
+});
 
 type User = SchemaType<typeof UserSchema>;
 

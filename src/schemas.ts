@@ -6,7 +6,7 @@ export type ErrorMap<T, Error extends string = string> = {
 
 export type Validator<T, Error extends string = string> = (value: unknown, context: ValidationContext) => ErrorType<T, Error> | undefined;
 
-export type Transformer<T> = (value: T, context: TransformationContext) => T;
+export type Transformer<T, R> = (value: T, context: TransformationContext) => R;
 
 export type SchemaType<T extends Schema<any>> = T extends Schema<infer D> ? D : never;
 
@@ -26,7 +26,7 @@ export abstract class Schema<T> {
     protected isOptional = false;
     protected requiredMessage: string;
 
-    private customTransformer?: Transformer<T>;
+    private customTransformer?: Transformer<T, any>;
     private whenEmptyValue?: { set: T };
     private setPrototype?: T;
 
@@ -87,10 +87,10 @@ export abstract class Schema<T> {
      * Executes a custom transfomer on this field during transformation.
      * @param transformer The transformation function to apply.
      */
-    public doCustom(transformer: Transformer<T>) {
+    public doCustom<R>(transformer: Transformer<T, R>): Schema<R> {
         if (this.customTransformer) throw new Error("Duplicate doCustom() call");
         this.customTransformer = transformer;
-        return this;
+        return this as any;
     }
 
     /**
