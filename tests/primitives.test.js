@@ -92,3 +92,14 @@ test("value schema", () => {
     expect(tv.value("toast", "Invalid").validate("asdf")).toBe("Invalid");
     expect(tv.value("toast", "Invalid toast").or(tv.value("bread", "Invalid bread")).validate("asdf")).toBe("Invalid bread");
 });
+
+test("any schema", () => {
+    expect(tv.any().validate("")).toBeUndefined();
+    expect(tv.any().validate([])).toBeUndefined();
+    expect(tv.any().validate({})).toBeUndefined();
+    expect(tv.any().validate(123)).toBeUndefined();
+    expect(tv.any("Must exist").validate(undefined)).toBe("Must exist");
+    expect(tv.any("Must exist").validate(null)).toBe("Null is not acceptable");
+    expect(tv.any("Must exist").optional().validate(undefined)).toBeUndefined();
+    expect(tv.any("Must exist").nullable().validate(null)).toBeUndefined();
+});

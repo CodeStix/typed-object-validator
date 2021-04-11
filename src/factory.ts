@@ -17,6 +17,7 @@ import {
     ValueSchema,
     AndSchemasToType,
     AndSchema,
+    AnySchema,
 } from "./schemas";
 
 /**
@@ -131,4 +132,12 @@ export function custom<T>(validator: Validator<T>, requiredMessage?: string) {
  */
 export function date(requiredMessage?: string, invalidMessage?: string) {
     return new DateSchema(requiredMessage, invalidMessage);
+}
+
+/**
+ * Requires this field to be anything.
+ * @param requiredMessage The error to return if the value is undefined.
+ */
+export function any(requiredMessage?: string) {
+    return new AnySchema(requiredMessage);
 }

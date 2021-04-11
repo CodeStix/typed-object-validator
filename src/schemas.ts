@@ -560,3 +560,9 @@ export class DateSchema extends Schema<Date> {
         return super.transform(value, context);
     }
 }
+
+export class AnySchema extends Schema<any> {
+    public validate(value: unknown, context: ValidationContext = {}): ErrorType<any, string> | undefined {
+        return this.validateNullable(value) ?? undefined;
+    }
+}

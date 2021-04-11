@@ -20,6 +20,7 @@ const UserSchema = tv.object({
     score: tv.number().doRound("round"),
     birthDate: tv.date("Enter a birth date"),
     gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
+    unknownKey: tv.any(),
 });
 
 type User = SchemaType<typeof UserSchema>;
