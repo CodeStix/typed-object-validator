@@ -11,6 +11,7 @@ test("mapped object", () => {
     expect(tv.object({ field: tv.number("Must be number") }).validate({ field: "value" })).toStrictEqual({ field: "Must be number" });
 
     expect(tv.object({ field: tv.string() }).optional().validate(undefined)).toBeUndefined();
+    expect(tv.object({}, "Specify value").validate(undefined)).toBe("Specify value");
 });
 
 test("tuple", () => {

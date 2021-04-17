@@ -13,7 +13,7 @@
         "form validation"
     ],
     "scripts": {
-        "start": "tsc --watch",
+        "start": "microbundle --no-compress --format cjs --watch",
         "build": "microbundle --no-compress --format cjs",
         "test": "jest"
     },

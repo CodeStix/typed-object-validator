@@ -63,7 +63,7 @@ export abstract class Schema<T> {
     }
 
     /**
-     * The value must match this and the specfied schema.
+     * The value must match this schema and the specfied schema.
      * @param other The other validation schema that must be accepted too.
      * @param requiredMessage The message to display when the value is undefined.
      */
@@ -73,7 +73,7 @@ export abstract class Schema<T> {
 
     /**
      * Transforms this field to the specified value when it is falsey/empty during transformation.
-     * @param valueToSet The value to set when it value is falsey/empty.
+     * @param valueToSet The value to set when the value is falsey/empty.
      */
     public doSetWhenEmpty<D extends string>(valueToSet: D): Schema<T | D>;
     public doSetWhenEmpty<D extends any>(valueToSet: D): Schema<T | D>;
@@ -288,7 +288,7 @@ export class NumberSchema extends SizeSchema<number> {
         return super.validateSize(value);
     }
 
-    public transform(value: number, context: TransformationContext) {
+    public transform(value: number, context: TransformationContext = {}) {
         switch (this.rounding) {
             case "ceil":
                 value = Math.ceil(value);
@@ -318,7 +318,7 @@ export class BooleanSchema extends Schema<boolean> {
 }
 
 export class ValueSchema<T> extends Schema<T> {
-    public constructor(protected value: T, requiredMessage?: string) {
+    public constructor(protected value: T, requiredMessage: string = "Does not match possible values") {
         super(requiredMessage);
     }
 
@@ -335,7 +335,7 @@ export class ObjectSchema extends Schema<object> {
         super(requiredMessage);
     }
 
-    public validate(value: unknown, context: ValidationContext) {
+    public validate(value: unknown, context: ValidationContext = {}) {
         let n = this.validateNullable(value);
         if (n !== null) return n;
 
@@ -347,7 +347,18 @@ export type MappedObjectKeySchemas<T> = {
     [Key in keyof T]: Schema<T[Key]>;
 };
 
-export class MappedObjectSchema<T extends {}> extends Schema<T> {
+export type MakeUndefinedOptional<T> = {
+    [Key in keyof T as undefined extends T[Key] ? Key : never]+?: T[Key];
+} &
+    {
+        [Key in keyof T as undefined extends T[Key] ? never : Key]-?: T[Key];
+    };
+
+type MergeIntersection<T> = {
+    [Key in keyof T]: T[Key];
+};
+
+export class MappedObjectSchema<T extends {}> extends Schema<MergeIntersection<MakeUndefinedOptional<T>>> {
     public constructor(protected fields: MappedObjectKeySchemas<T>, requiredMessage?: string) {
         super(requiredMessage);
     }
@@ -363,22 +374,25 @@ export class MappedObjectSchema<T extends {}> extends Schema<T> {
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             let field = (value as T)[key];
-            let result = this.fields[key].validate(field, context);
+            let result = (this.fields as any)[key].validate(field, context);
             if (result !== undefined) {
                 err[key] = result;
-                if (context.abortEarly ?? true) return err as ErrorType<T>;
+                if (context.abortEarly ?? true) return err as ErrorType<MergeIntersection<MakeUndefinedOptional<T>>>;
             }
         }
-        return Object.keys(err).length > 0 ? (err as ErrorType<T>) : undefined;
+        return Object.keys(err).length > 0 ? (err as ErrorType<MergeIntersection<MakeUndefinedOptional<T>>>) : undefined;
     }
 
-    public transform(value: T, context: TransformationContext = {}): T {
+    public transform(
+        value: MergeIntersection<MakeUndefinedOptional<T>>,
+        context: TransformationContext = {}
+    ): MergeIntersection<MakeUndefinedOptional<T>> {
         if (typeof value === "object" && value !== null) {
             let keys = Object.keys(this.fields) as (keyof T)[];
-            let obj: T = {} as any;
+            let obj = {} as any;
             for (let i = 0; i < keys.length; i++) {
                 let key = keys[i];
-                obj[key] = this.fields[key].transform((value as T)[key], context);
+                obj[key] = (this.fields as any)[key].transform((value as any)[key], context);
             }
             return super.transform(obj, context);
         } else {
