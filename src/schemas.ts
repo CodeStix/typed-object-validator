@@ -530,11 +530,15 @@ export class ArraySchema<T> extends SizeSchema<T[]> {
     }
 
     public transform(value: T[], context: TransformationContext = {}) {
-        let arr = new Array(value.length) as T[];
-        for (let i = 0; i < value.length; i++) {
-            arr[i] = this.schema.transform(value[i], context);
+        if (Array.isArray(value)) {
+            let arr = new Array(value.length) as T[];
+            for (let i = 0; i < value.length; i++) {
+                arr[i] = this.schema.transform(value[i], context);
+            }
+            return super.transform(arr, context);
+        } else {
+            return super.transform(value, context);
         }
-        return super.transform(arr, context);
     }
 }
 
