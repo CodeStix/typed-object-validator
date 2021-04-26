@@ -615,4 +615,18 @@ export class MappedSchema<K extends string | number | symbol, V> extends Schema<
 
         return Object.keys(err).length > 0 ? err : undefined;
     }
+
+    public transform(value: { [Key in K]: V }, context: TransformationContext = {}): { [Key in K]: V } {
+        if (typeof value === "object" && value !== null) {
+            let keys = Object.keys(value);
+            let obj = {} as any;
+            for (let i = 0; i < keys.length; i++) {
+                let key = keys[i];
+                obj[this.keySchema.transform(key as any)] = this.valueSchema.transform((value as any)[key], context);
+            }
+            return super.transform(obj, context);
+        } else {
+            return super.transform(value, context);
+        }
+    }
 }

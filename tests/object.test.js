@@ -36,4 +36,10 @@ test("mapped", () => {
 
     expect(tv.mapped(tv.number(), tv.array(tv.number())).validate([[100]])).toBeUndefined();
     expect(tv.mapped(tv.number(), tv.array(tv.number())).validate([[[100]]])).toStrictEqual({ 0: { 0: "Must be number" } });
+
+    let tt = tv.mapped(tv.string().doCase("upper"), tv.boolean());
+    expect(tt.validate({})).toBeUndefined();
+    expect(tt.validate({ ok: true })).toBeUndefined();
+    expect(tt.validate({ notOk: 0 })).toStrictEqual({ notOk: "Must be boolean" });
+    expect(tt.transform({ ok: false })).toStrictEqual({ OK: false });
 });
