@@ -590,14 +590,14 @@ export class MappedSchema<K extends string | number | symbol, V> extends Schema<
         super(requiredMessage);
     }
 
-    public validate(value: unknown, context: ValidationContext): ErrorType<{ [Key in K]: V }, string> | undefined {
+    public validate(value: unknown, context: ValidationContext = {}): ErrorType<{ [Key in K]: V }, string> | undefined {
         let v = this.validateNullable(value);
         if (v !== null) return v;
 
         if (typeof value !== "object") return "Must be object";
 
         let err: any = {};
-        let keys = Object.keys(value!);
+        let keys = Array.isArray(value) ? Array.from(value.keys()) : Object.keys(value!);
         for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             let keyError = this.keySchema.validate(key, context);

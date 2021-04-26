@@ -23,3 +23,17 @@ test("array", () => {
     expect(tv.array(tv.boolean()).validate([true, false, true])).toBeUndefined();
     expect(tv.array(tv.boolean()).validate([true, false, 0])).toStrictEqual({ 2: "Must be boolean" });
 });
+
+test("mapped", () => {
+    let t = tv.mapped(tv.value("a").or(tv.value("b")), tv.string());
+    expect(t.validate(undefined)).toBe("Enter a value");
+    expect(t.validate(null)).toBe("Null is not acceptable");
+    expect(t.validate({ a: "nice" })).toBeUndefined();
+    expect(t.validate({ b: "" })).toBeUndefined();
+    expect(t.validate({ c: "" })).toStrictEqual({ c: "Does not match possible values" });
+    expect(t.validate({ a: 100 })).toStrictEqual({ a: "Must be string" });
+    expect(t.validate({ b: false })).toStrictEqual({ b: "Must be string" });
+
+    expect(tv.mapped(tv.number(), tv.array(tv.number())).validate([[100]])).toBeUndefined();
+    expect(tv.mapped(tv.number(), tv.array(tv.number())).validate([[[100]]])).toStrictEqual({ 0: { 0: "Must be number" } });
+});
