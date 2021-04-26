@@ -5,8 +5,8 @@ import {
     BooleanSchema,
     CustomSchema,
     DateSchema,
-    MappedObjectKeySchemas,
-    MappedObjectSchema,
+    LiteralObjectKeySchemas,
+    LiteralObjectSchema,
     NumberSchema,
     ObjectSchema,
     OrSchema,
@@ -68,7 +68,7 @@ export function value<T extends string | number | boolean | null | undefined>(va
  * @param fields The object and nested validation schemas the value must match.
  * @param requiredMessage The error to return if the value is undefined.
  */
-export function object<T>(fields: MappedObjectKeySchemas<T>, requiredMessage?: string): MappedObjectSchema<T>;
+export function object<T>(fields: LiteralObjectKeySchemas<T>, requiredMessage?: string): LiteralObjectSchema<T>;
 /**
  * Requires this field to be a object, allowing all keys and values.
  * @param requiredMessage The error to return if the value is undefined.
@@ -76,7 +76,7 @@ export function object<T>(fields: MappedObjectKeySchemas<T>, requiredMessage?: s
 export function object<T>(requiredMessage?: string): ObjectSchema;
 export function object() {
     if (typeof arguments[0] === "object") {
-        return new MappedObjectSchema(arguments[0], arguments[1]);
+        return new LiteralObjectSchema(arguments[0], arguments[1]);
     } else {
         return new ObjectSchema(arguments[0] ?? arguments[1]);
     }
@@ -143,6 +143,11 @@ export function any(requiredMessage?: string) {
     return new AnySchema(requiredMessage);
 }
 
+/**
+ * Requires this field to be a mapped object type.
+ * @param keySchema The keys of the object must match this schema.
+ * @param valueSchema The values of the object must match this schema.
+ */
 export function mapped<K extends string | number | symbol, V>(keySchema: Schema<K>, valueSchema: Schema<V>): MappedSchema<K, V> {
     return new MappedSchema(keySchema, valueSchema);
 }

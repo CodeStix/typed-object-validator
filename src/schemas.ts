@@ -343,7 +343,7 @@ export class ObjectSchema extends Schema<object> {
     }
 }
 
-export type MappedObjectKeySchemas<T> = {
+export type LiteralObjectKeySchemas<T> = {
     [Key in keyof T]: Schema<T[Key]>;
 };
 
@@ -358,8 +358,8 @@ type MergeIntersection<T> = {
     [Key in keyof T]: T[Key];
 };
 
-export class MappedObjectSchema<T extends {}> extends Schema<MergeIntersection<MakeUndefinedOptional<T>>> {
-    public constructor(protected fields: MappedObjectKeySchemas<T>, requiredMessage?: string) {
+export class LiteralObjectSchema<T extends {}> extends Schema<MergeIntersection<MakeUndefinedOptional<T>>> {
+    public constructor(protected fields: LiteralObjectKeySchemas<T>, requiredMessage?: string) {
         super(requiredMessage);
     }
 
