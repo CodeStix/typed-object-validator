@@ -18,6 +18,7 @@ import {
     AndSchemasToType,
     AndSchema,
     AnySchema,
+    MappedSchema,
 } from "./schemas";
 
 /**
@@ -140,4 +141,8 @@ export function date(requiredMessage?: string, invalidMessage?: string) {
  */
 export function any(requiredMessage?: string) {
     return new AnySchema(requiredMessage);
+}
+
+export function mapped<K extends string | number | symbol, V>(keySchema: Schema<K>, valueSchema: Schema<V>): MappedSchema<K, V> {
+    return new MappedSchema(keySchema, valueSchema);
 }

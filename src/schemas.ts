@@ -584,3 +584,35 @@ export class AnySchema extends Schema<any> {
         return this.validateNullable(value) ?? undefined;
     }
 }
+
+export class MappedSchema<K extends string | number | symbol, V> extends Schema<{ [Key in K]: V }> {
+    constructor(protected keySchema: Schema<K>, protected valueSchema: Schema<V>, requiredMessage?: string) {
+        super(requiredMessage);
+    }
+
+    public validate(value: unknown, context: ValidationContext): ErrorType<{ [Key in K]: V }, string> | undefined {
+        let v = this.validateNullable(value);
+        if (v !== null) return v;
+
+        if (typeof value !== "object") return "Must be object";
+
+        let err: any = {};
+        let keys = Object.keys(value!);
+        for (let i = 0; i < keys.length; i++) {
+            let key = keys[i];
+            let keyError = this.keySchema.validate(key, context);
+            if (keyError) {
+                err[key] = keyError;
+                if (context.abortEarly) return err;
+                continue;
+            }
+            let valueError = this.valueSchema.validate((value as any)[key], context);
+            if (valueError) {
+                err[key] = valueError;
+                if (context.abortEarly) return err;
+            }
+        }
+
+        return Object.keys(err).length > 0 ? err : undefined;
+    }
+}

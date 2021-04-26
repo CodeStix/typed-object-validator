@@ -14,13 +14,15 @@ class UserClass {
     }
 }
 
+const SettingsSchema = tv.value("counter").or(tv.value("preferLight")).or(tv.value("preferDark"));
+
 const UserSchema = tv.object({
     firstName: tv.string().doCase("capitalize").min(1, "Enter a first name"),
     lastName: tv.string().doCase("capitalize").min(1, "Enter a last name"),
     score: tv.number().doRound("round"),
     birthDate: tv.date("Enter a birth date"),
     gender: tv.value("male").or(tv.value("female"), "Please select male or female"),
-    unknownKey: tv.any(),
+    settings: tv.mapped(SettingsSchema, tv.object()),
 });
 
 type User = SchemaType<typeof UserSchema>;
@@ -74,12 +76,12 @@ function App() {
                     <AnyListener form={form} render={() => JSON.stringify(form.values, null, 2)} />
                 </pre>
             </div>
-            {/* <div style={{ margin: "2em" }}>
+            <div style={{ margin: "2em" }}>
                 <h2>Errors</h2>
                 <pre>
                     <AnyListener form={form} render={() => JSON.stringify(form.errorMap, null, 2)} />
                 </pre>
-            </div> */}
+            </div>
             <div style={{ margin: "2em" }}>
                 <h2>Transformed Output</h2>
                 <pre>
